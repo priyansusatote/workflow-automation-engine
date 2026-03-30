@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
 
+    boolean existsByNameAndUserId(String name, UUID userId);
 }
