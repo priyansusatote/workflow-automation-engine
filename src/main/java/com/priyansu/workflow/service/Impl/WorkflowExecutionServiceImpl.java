@@ -58,7 +58,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
 
-
     private void executeNode(JsonNode currentNode,
                              JsonNode nodes,
                              JsonNode edges,
@@ -73,14 +72,39 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
         executor.execute(currentNode, context);
 
-        //  Move to next node(s)
+        //  Move to next node(s) [For normal nodes:Always go to next node] & [For decision node:Check decisionResult: Match condition & Follow correct edge only]
         for (JsonNode edge : edges) {
+
             if (edge.get("from").asText().equals(nodeId)) {
 
-                String nextId = edge.get("to").asText();
-                JsonNode nextNode = findNodeById(nodes, nextId);
+                // 🔥 DECISION NODE HANDLING
+                if ("DECISION".equals(type)) {
 
-                executeNode(nextNode, nodes, edges, context);
+                    boolean decision = (boolean) context.get("decisionResult");
+
+                    JsonNode conditionNode = edge.get("condition");
+
+                    // ❗ skip edges without condition
+                    if (conditionNode == null) continue;
+
+                    String condition = conditionNode.asText();
+
+                    if (String.valueOf(decision).equals(condition)) {
+
+                        String nextId = edge.get("to").asText();
+                        JsonNode nextNode = findNodeById(nodes, nextId);
+
+                        executeNode(nextNode, nodes, edges, context);
+                    }
+
+                } else {
+                    // 🔥 NORMAL FLOW (no condition required)
+
+                    String nextId = edge.get("to").asText();
+                    JsonNode nextNode = findNodeById(nodes, nextId);
+
+                    executeNode(nextNode, nodes, edges, context);
+                }
             }
         }
     }

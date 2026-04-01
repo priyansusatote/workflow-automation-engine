@@ -18,5 +18,8 @@ public class TriggerExecutor implements TaskExecutor {
         System.out.println("Trigger executed");
 
         context.put("started", true);
+
+        //temporary
+        context.put("amount", 15000);
     }
 }
