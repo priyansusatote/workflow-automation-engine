@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.priyansu.workflow.entity.Workflow;
 import com.priyansu.workflow.entity.WorkflowDefinition;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
+import com.priyansu.workflow.execution.WorkflowContext;
+import com.priyansu.workflow.executor.ExecutorFactory;
+import com.priyansu.workflow.executor.TaskExecutor;
 import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -12,15 +15,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+
 @Service
 @RequiredArgsConstructor
 public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     private final WorkflowDefinitionRepository definitionRepository;
     private final ObjectMapper objectMapper;
+    private final ExecutorFactory executorFactory;
 
     @Override
     public void executeWorkflow(UUID workflowId) {
+
         WorkflowDefinition definition = definitionRepository
                 .findTopByWorkflowIdOrderByVersionDesc(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
@@ -30,7 +36,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         JsonNode nodes = json.get("nodes");
         JsonNode edges = json.get("edges");
 
-        //Step 1: find start node (TRIGGER)
+        //  Step 1: Find start node (TRIGGER)
         JsonNode startNode = null;
 
         for (JsonNode node : nodes) {
@@ -44,36 +50,40 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             throw new RuntimeException("No trigger node found");
         }
 
-        //Step 2: Start execution
-        executeNode(startNode, nodes, edges);
+        //  Step 2: Initialize context
+        WorkflowContext context = new WorkflowContext();
 
+        //  Step 3: Start execution
+        executeNode(startNode, nodes, edges, context);
     }
 
 
-    private void executeNode(JsonNode currentNode, JsonNode nodes, JsonNode edges) {
+
+    private void executeNode(JsonNode currentNode,
+                             JsonNode nodes,
+                             JsonNode edges,
+                             WorkflowContext context) {
 
         String nodeId = currentNode.get("id").asText();
         String type = currentNode.get("type").asText();
 
-        System.out.println("Executing node: " + type + " (ID: " + nodeId + ")");
+        System.out.println("Executing: " + type + " (ID: " + nodeId + ")");
 
-        //  Simulate execution
-        // Later → we will use Strategy Pattern here
+        //  Strategy Pattern used here
+        TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
+        executor.execute(currentNode, context);
 
-        // Step 3: find next node
+        //  Move to next node(s)
         for (JsonNode edge : edges) {
             if (edge.get("from").asText().equals(nodeId)) {
 
-                String nextNodeId = edge.get("to").asText();
+                String nextId = edge.get("to").asText();
+                JsonNode nextNode = findNodeById(nodes, nextId);
 
-                JsonNode nextNode = findNodeById(nodes, nextNodeId);
-
-                executeNode(nextNode, nodes, edges); //recursive
+                executeNode(nextNode, nodes, edges, context);
             }
         }
-
     }
-
 
     private JsonNode findNodeById(JsonNode nodes, String id) {
         for (JsonNode node : nodes) {
@@ -81,6 +91,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 return node;
             }
         }
-        throw new RuntimeException("Node not found: " +id);
+        throw new RuntimeException("Node not found: " + id);
     }
 }
