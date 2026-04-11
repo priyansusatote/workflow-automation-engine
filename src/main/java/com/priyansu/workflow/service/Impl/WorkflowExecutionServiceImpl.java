@@ -11,9 +11,16 @@ import com.priyansu.workflow.executor.TaskExecutor;
 import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.Server;
+import org.hibernate.sql.ast.tree.expression.Every;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 @Service
@@ -23,6 +30,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final WorkflowDefinitionRepository definitionRepository;
     private final ObjectMapper objectMapper;
     private final ExecutorFactory executorFactory;
+
+    // "ExecutorService with a fixed thread pool is used to control concurrency, reuse threads, and prevent resource exhaustion caused by creating too many threads manually."
+    private final ExecutorService executorService = Executors.newFixedThreadPool(5); //max 5 parallel threads , Tasks beyond 5 → go into queue
+    //  Without ExecutorService:Every request creates a new thread,  Server crashes under load
 
     @Override
     public void executeWorkflow(UUID workflowId) {
@@ -68,10 +79,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
         System.out.println("Executing: " + type + " (ID: " + nodeId + ")");
 
-        //  Strategy Pattern used here
+        //  Strategy Pattern used here (Execute current node)
         TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
         executor.execute(currentNode, context);
 
+        List<JsonNode> nextNodes = new ArrayList<>();
+
+        //find all next nodes
         //  Move to next node(s) [For normal nodes:Always go to next node] & [For decision node:Check decisionResult: Match condition & Follow correct edge only]
         for (JsonNode edge : edges) {
 
@@ -92,19 +106,33 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                     if (String.valueOf(decision).equals(condition)) {
 
                         String nextId = edge.get("to").asText();
-                        JsonNode nextNode = findNodeById(nodes, nextId);
+                        nextNodes.add(findNodeById(nodes, nextId));
 
-                        executeNode(nextNode, nodes, edges, context);
                     }
 
                 } else {
-                    // 🔥 NORMAL FLOW (no condition required)
+                    // 🔥 NORMAL FLOW (no condition required, ALL edges allowed)
 
                     String nextId = edge.get("to").asText();
-                    JsonNode nextNode = findNodeById(nodes, nextId);
-
-                    executeNode(nextNode, nodes, edges, context);
+                    nextNodes.add(findNodeById(nodes, nextId));
                 }
+            }
+        }
+        // 🔥 PARALLEL EXECUTION {Execute → find ALL next nodes → run in parallel}
+        List<Future<?>> futures = new ArrayList<>(); //Future = a handle/reference to an async task [Helps you: wait for completion,get result,catch exceptions]
+
+        for (JsonNode nextNode : nextNodes) { //submit tasks in parallel
+            futures.add(executorService.submit(() ->  //(.submit):sends task to thread pool,Tasks run concurrently (max 5 at a time)
+                    executeNode(nextNode, nodes, edges, context)
+            ));
+        }
+
+        // 🔥 WAIT FOR ALL TO COMPLETE
+        for (Future<?> future : futures) {
+            try {
+                future.get(); //Wait for all tasks to complete , All parallel tasks finish before moving forward
+            } catch (Exception e) {
+                throw new RuntimeException("Parallel execution failed", e);
             }
         }
     }
