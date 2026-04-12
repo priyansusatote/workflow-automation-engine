@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.priyansu.workflow.entity.Workflow;
 import com.priyansu.workflow.entity.WorkflowDefinition;
+import com.priyansu.workflow.entity.WorkflowExecution;
+import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.execution.WorkflowContext;
 import com.priyansu.workflow.executor.ExecutorFactory;
 import com.priyansu.workflow.executor.TaskExecutor;
 import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
+import com.priyansu.workflow.repository.WorkflowExecutionRepository;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.Server;
@@ -30,6 +33,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final WorkflowDefinitionRepository definitionRepository;
     private final ObjectMapper objectMapper;
     private final ExecutorFactory executorFactory;
+    private final WorkflowExecutionRepository executionRepository;
 
     // "ExecutorService with a fixed thread pool is used to control concurrency, reuse threads, and prevent resource exhaustion caused by creating too many threads manually."
     private final ExecutorService executorService = Executors.newFixedThreadPool(5); //max 5 parallel threads , Tasks beyond 5 → go into queue
@@ -38,34 +42,56 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     @Override
     public void executeWorkflow(UUID workflowId) {
 
-        WorkflowDefinition definition = definitionRepository
-                .findTopByWorkflowIdOrderByVersionDesc(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
+        //  STEP 1: CREATE EXECUTION RECORD (track workflow run)
+        WorkflowExecution execution = new WorkflowExecution();
+        execution.setWorkflowId(workflowId);
+        execution.setStatus(ExecutionStatus.RUNNING);
 
-        JsonNode json = definition.getDefinitionJson();
+        execution = executionRepository.save(execution);
 
-        JsonNode nodes = json.get("nodes");
-        JsonNode edges = json.get("edges");
+        try {
+            WorkflowDefinition definition = definitionRepository
+                    .findTopByWorkflowIdOrderByVersionDesc(workflowId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
 
-        //  Step 1: Find start node (TRIGGER)
-        JsonNode startNode = null;
+            JsonNode json = definition.getDefinitionJson();
 
-        for (JsonNode node : nodes) {
-            if ("TRIGGER".equals(node.get("type").asText())) {
-                startNode = node;
-                break;
+            JsonNode nodes = json.get("nodes");
+            JsonNode edges = json.get("edges");
+
+            //  Step 2: Find start node (TRIGGER)
+            JsonNode startNode = null;
+
+            for (JsonNode node : nodes) {
+                if ("TRIGGER".equals(node.get("type").asText())) {
+                    startNode = node;
+                    break;
+                }
             }
+            if (startNode == null) {
+                throw new RuntimeException("No trigger node found");
+            }
+
+            //  Step 3: Initialize context
+            WorkflowContext context = new WorkflowContext();
+
+            //  Step 4: Start execution (recursive + parallel inside)
+            executeNode(startNode, nodes, edges, context);
+
+            //✅ Success
+            execution.setStatus(ExecutionStatus.SUCCESS);
+
+
+        } catch (Exception e) {
+            // ❌ FAILURE CASE
+            execution.setStatus(ExecutionStatus.FAILED);
+            execution.setErrorMessage(e.getMessage());
+
+            throw e;
+        } finally {
+            //  ALWAYS SAVE FINAL STATE (SUCCESS / FAILED)
+            executionRepository.save(execution);
         }
-
-        if (startNode == null) {
-            throw new RuntimeException("No trigger node found");
-        }
-
-        //  Step 2: Initialize context
-        WorkflowContext context = new WorkflowContext();
-
-        //  Step 3: Start execution
-        executeNode(startNode, nodes, edges, context);
     }
 
 
