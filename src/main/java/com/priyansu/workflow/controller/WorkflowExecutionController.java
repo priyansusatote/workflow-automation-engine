@@ -1,5 +1,6 @@
 package com.priyansu.workflow.controller;
 
+import com.priyansu.workflow.execution.AsyncWorkflowExecutor;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,12 +15,18 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WorkflowExecutionController {
 
-    private final WorkflowExecutionService executionService;
+   // Async executor that triggers background workflow execution
+    private final AsyncWorkflowExecutor asyncExecutor;
 
     @PostMapping("/{workflowId}/execute")
     public String execute(@PathVariable UUID workflowId) {
-        executionService.executeWorkflow(workflowId);
-        return "Workflow execution started";
+
+        // Triggers asynchronous execution of the workflow.
+        // This call returns immediately without waiting for the workflow to complete.
+        asyncExecutor.execute(workflowId);
+
+        // Immediate response to client indicating background processing has started
+        return "Workflow execution started asynchronously";
     }
 
 }
