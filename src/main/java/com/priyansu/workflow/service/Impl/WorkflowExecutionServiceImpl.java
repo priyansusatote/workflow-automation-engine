@@ -2,7 +2,7 @@ package com.priyansu.workflow.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.priyansu.workflow.entity.Workflow;
+import com.priyansu.workflow.entity.TaskExecution;
 import com.priyansu.workflow.entity.WorkflowDefinition;
 import com.priyansu.workflow.entity.WorkflowExecution;
 import com.priyansu.workflow.entity.enums.ExecutionStatus;
@@ -10,12 +10,11 @@ import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.execution.WorkflowContext;
 import com.priyansu.workflow.executor.ExecutorFactory;
 import com.priyansu.workflow.executor.TaskExecutor;
+import com.priyansu.workflow.repository.TaskExecutionRepository;
 import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
 import com.priyansu.workflow.repository.WorkflowExecutionRepository;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.Server;
-import org.hibernate.sql.ast.tree.expression.Every;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -34,6 +33,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final ObjectMapper objectMapper;
     private final ExecutorFactory executorFactory;
     private final WorkflowExecutionRepository executionRepository;
+    private final TaskExecutionRepository taskExecutionRepository;
+
 
     // "ExecutorService with a fixed thread pool is used to control concurrency, reuse threads, and prevent resource exhaustion caused by creating too many threads manually."
     private final ExecutorService executorService = Executors.newFixedThreadPool(5); //max 5 parallel threads , Tasks beyond 5 → go into queue
@@ -76,7 +77,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             WorkflowContext context = new WorkflowContext();
 
             //  Step 4: Start execution (recursive + parallel inside)
-            executeNode(startNode, nodes, edges, context);
+            executeNode(startNode, nodes, edges, context, execution.getId() );
 
             //✅ Success
             execution.setStatus(ExecutionStatus.SUCCESS);
@@ -98,16 +99,38 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private void executeNode(JsonNode currentNode,
                              JsonNode nodes,
                              JsonNode edges,
-                             WorkflowContext context) {
+                             WorkflowContext context, UUID executionId) {
 
         String nodeId = currentNode.get("id").asText();
         String type = currentNode.get("type").asText();
 
-        System.out.println("Executing: " + type + " (ID: " + nodeId + ")");
+        //log (store current-node details)
+        TaskExecution task = new TaskExecution();
+        task.setWorkflowExecutionId(executionId);
+        task.setNodeId(nodeId);
+        task.setNodeType(type);
+        task.setStatus(ExecutionStatus.RUNNING);
+        taskExecutionRepository.save(task);
 
-        //  Strategy Pattern used here (Execute current node)
-        TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
-        executor.execute(currentNode, context);
+        try {
+            System.out.println( Thread.currentThread().getName() + "Executing: " + type + " (ID: " + nodeId + ")");
+
+            //  Strategy Pattern used here (Execute current node)
+            TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
+            executor.execute(currentNode, context);
+
+            task.setStatus(ExecutionStatus.SUCCESS);
+            task.setLogMessage("Executed successfully");
+
+        } catch (Exception e) {
+            task.setStatus(ExecutionStatus.FAILED);
+            task.setLogMessage(e.getMessage());
+
+            throw e;
+        } finally {
+            taskExecutionRepository.save(task);
+        }
+
 
         List<JsonNode> nextNodes = new ArrayList<>();
 
@@ -149,7 +172,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
         for (JsonNode nextNode : nextNodes) { //submit tasks in parallel
             futures.add(executorService.submit(() ->  //(.submit):sends task to thread pool,Tasks run concurrently (max 5 at a time)
-                    executeNode(nextNode, nodes, edges, context)
+                    executeNode(nextNode, nodes, edges, context, executionId )
             ));
         }
 
@@ -162,6 +185,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             }
         }
     }
+
+
+
+
 
     private JsonNode findNodeById(JsonNode nodes, String id) {
         for (JsonNode node : nodes) {
