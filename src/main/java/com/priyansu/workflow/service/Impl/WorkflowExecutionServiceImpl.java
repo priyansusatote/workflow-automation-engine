@@ -6,6 +6,8 @@ import com.priyansu.workflow.entity.TaskExecution;
 import com.priyansu.workflow.entity.WorkflowDefinition;
 import com.priyansu.workflow.entity.WorkflowExecution;
 import com.priyansu.workflow.entity.enums.ExecutionStatus;
+import com.priyansu.workflow.event.WorkflowExecutionEvent;
+import com.priyansu.workflow.event.WorkflowExecutionProducer;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.execution.WorkflowContext;
 import com.priyansu.workflow.executor.ExecutorFactory;
@@ -15,10 +17,12 @@ import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
 import com.priyansu.workflow.repository.WorkflowExecutionRepository;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +30,7 @@ import java.util.concurrent.Future;
 
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
@@ -34,66 +39,128 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final ExecutorFactory executorFactory;
     private final WorkflowExecutionRepository executionRepository;
     private final TaskExecutionRepository taskExecutionRepository;
+    private final WorkflowExecutionProducer producer;
 
 
     // "ExecutorService with a fixed thread pool is used to control concurrency, reuse threads, and prevent resource exhaustion caused by creating too many threads manually."
     private final ExecutorService executorService = Executors.newFixedThreadPool(5); //max 5 parallel threads , Tasks beyond 5 → go into queue
     //  Without ExecutorService:Every request creates a new thread,  Server crashes under load
 
-    @Override
-    public void executeWorkflow(UUID workflowId) {
+//    @Override
+//    public void executeWorkflow(UUID workflowId) {
+//
+//        //  STEP 1: CREATE EXECUTION RECORD (track workflow run)
+//        WorkflowExecution execution = new WorkflowExecution();
+//        execution.setWorkflowId(workflowId);
+//        execution.setStatus(ExecutionStatus.RUNNING);
+//
+//        execution = executionRepository.save(execution);
+//
+//        try {
+//            WorkflowDefinition definition = definitionRepository
+//                    .findTopByWorkflowIdOrderByVersionDesc(workflowId)
+//                    .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
+//
+//            JsonNode json = definition.getDefinitionJson();
+//
+//            JsonNode nodes = json.get("nodes");
+//            JsonNode edges = json.get("edges");
+//
+//            //  Step 2: Find start node (TRIGGER)
+//            JsonNode startNode = null;
+//
+//            for (JsonNode node : nodes) {
+//                if ("TRIGGER".equals(node.get("type").asText())) {
+//                    startNode = node;
+//                    break;
+//                }
+//            }
+//            if (startNode == null) {
+//                throw new RuntimeException("No trigger node found");
+//            }
+//
+//            //  Step 3: Initialize context
+//            WorkflowContext context = new WorkflowContext();
+//
+//            //  Step 4: Start execution (recursive + parallel inside)
+//            executeNode(startNode, nodes, edges, context, execution.getId());
+//
+//            //✅ Success
+//            execution.setStatus(ExecutionStatus.SUCCESS);
+//
+//
+//        } catch (Exception e) {
+//            // ❌ FAILURE CASE
+//            execution.setStatus(ExecutionStatus.FAILED);
+//            execution.setErrorMessage(e.getMessage());
+//
+//            throw e;
+//        } finally {
+//            //  ALWAYS SAVE FINAL STATE (SUCCESS / FAILED)
+//            executionRepository.save(execution);
+//        }
+//    }
 
-        //  STEP 1: CREATE EXECUTION RECORD (track workflow run)
-        WorkflowExecution execution = new WorkflowExecution();
-        execution.setWorkflowId(workflowId);
-        execution.setStatus(ExecutionStatus.RUNNING);
+    public void executeWorkflowFromKafka(
+            UUID workflowId,
+            UUID executionId,
+            Map<String, Object> input
+    ) {
 
-        execution = executionRepository.save(execution);
+        WorkflowExecution execution = executionRepository
+                .findById(executionId)
+                .orElseThrow(() -> new RuntimeException("Execution not found"));
+
+        // 🔥 IDEMPOTENCY CHECK {Same message can come twice}{Idempotency ensures that repeated requests or events do not cause duplicate side effects.} [Ensures a Thing(operation) to happens Once , Should only happen once even if repeated"
+        if (execution.getStatus() == ExecutionStatus.SUCCESS) {
+            return;
+        }
 
         try {
+            log.info("Starting workflow execution → executionId={}", executionId);
+
+            execution.setStatus(ExecutionStatus.RUNNING);
+            executionRepository.save(execution);
+
             WorkflowDefinition definition = definitionRepository
                     .findTopByWorkflowIdOrderByVersionDesc(workflowId)
                     .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
 
             JsonNode json = definition.getDefinitionJson();
-
             JsonNode nodes = json.get("nodes");
             JsonNode edges = json.get("edges");
 
-            //  Step 2: Find start node (TRIGGER)
+            // find trigger node
             JsonNode startNode = null;
-
             for (JsonNode node : nodes) {
                 if ("TRIGGER".equals(node.get("type").asText())) {
                     startNode = node;
                     break;
                 }
             }
+
             if (startNode == null) {
                 throw new RuntimeException("No trigger node found");
             }
 
-            //  Step 3: Initialize context
-            WorkflowContext context = new WorkflowContext();
+            //  Use input here (IMPORTANT)
+            WorkflowContext context = new WorkflowContext(input);
 
-            //  Step 4: Start execution (recursive + parallel inside)
-            executeNode(startNode, nodes, edges, context, execution.getId() );
+            executeNode(startNode, nodes, edges, context, executionId);
 
-            //✅ Success
             execution.setStatus(ExecutionStatus.SUCCESS);
 
-
         } catch (Exception e) {
-            // ❌ FAILURE CASE
             execution.setStatus(ExecutionStatus.FAILED);
             execution.setErrorMessage(e.getMessage());
-
             throw e;
+
         } finally {
-            //  ALWAYS SAVE FINAL STATE (SUCCESS / FAILED)
             executionRepository.save(execution);
         }
     }
+
+
 
 
     private void executeNode(JsonNode currentNode,
@@ -113,7 +180,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         taskExecutionRepository.save(task);
 
         try {
-            System.out.println( Thread.currentThread().getName() + "Executing: " + type + " (ID: " + nodeId + ")");
+            log.info("Thread={} Executing nodeType={} nodeId={}",
+                    Thread.currentThread().getName(), type, nodeId);
 
             //  Strategy Pattern used here (Execute current node)
             TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
@@ -145,6 +213,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
                     boolean decision = (boolean) context.get("decisionResult");
 
+
                     JsonNode conditionNode = edge.get("condition");
 
                     // ❗ skip edges without condition
@@ -172,7 +241,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
         for (JsonNode nextNode : nextNodes) { //submit tasks in parallel
             futures.add(executorService.submit(() ->  //(.submit):sends task to thread pool,Tasks run concurrently (max 5 at a time)
-                    executeNode(nextNode, nodes, edges, context, executionId )
+                    executeNode(nextNode, nodes, edges, context, executionId)
             ));
         }
 
@@ -187,7 +256,28 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
 
+    @Override
+    public UUID triggerWorkflow(UUID workflowId, Map<String, Object> input) {
 
+        WorkflowExecution execution = createExecution(workflowId);
+
+        WorkflowExecutionEvent event = new WorkflowExecutionEvent(
+                workflowId,
+                execution.getId(),
+                input
+        );
+
+        producer.sendExecutionEvent(event);
+
+        return execution.getId();
+    }
+
+    private WorkflowExecution createExecution(UUID workflowId) {
+        WorkflowExecution execution = new WorkflowExecution();
+        execution.setWorkflowId(workflowId);
+        execution.setStatus(ExecutionStatus.RUNNING);
+        return executionRepository.save(execution);
+    }
 
 
     private JsonNode findNodeById(JsonNode nodes, String id) {

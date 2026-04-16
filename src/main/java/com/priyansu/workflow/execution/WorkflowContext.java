@@ -10,6 +10,13 @@ public class WorkflowContext {
     private final Map<String, Object> data = new HashMap<>();
 
 
+    public WorkflowContext(Map<String, Object> input) {
+        if (input != null) {
+            data.putAll(input);
+        }
+    }
+
+
     public void put(String key, Object value) {
 
         data.put(key, value);
@@ -20,9 +27,5 @@ public class WorkflowContext {
         return data.get(key);
     }
 
-    public Map<String, Object> getAll() {
-
-        return data;
-    }
 
 }

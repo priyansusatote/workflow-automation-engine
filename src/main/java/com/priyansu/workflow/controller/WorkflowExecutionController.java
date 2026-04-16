@@ -3,11 +3,10 @@ package com.priyansu.workflow.controller;
 import com.priyansu.workflow.execution.AsyncWorkflowExecutor;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -15,18 +14,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WorkflowExecutionController {
 
-   // Async executor that triggers background workflow execution
-    private final AsyncWorkflowExecutor asyncExecutor;
+    private final WorkflowExecutionService executionService;
 
     @PostMapping("/{workflowId}/execute")
-    public String execute(@PathVariable UUID workflowId) {
+    public ResponseEntity<Map<String, Object>> execute(
+            @PathVariable UUID workflowId,
+            @RequestBody(required = false) Map<String, Object> input
+    ) {
 
-        // Triggers asynchronous execution of the workflow.
-        // This call returns immediately without waiting for the workflow to complete.
-        asyncExecutor.execute(workflowId);
+        UUID executionId = executionService.triggerWorkflow(
+                workflowId,
+                input != null ? input : Map.of()
+        );
 
-        // Immediate response to client indicating background processing has started
-        return "Workflow execution started asynchronously";
+        return ResponseEntity.ok(Map.of(
+                "message", "Workflow execution started",
+                "executionId", executionId
+        ));
     }
 
 }
