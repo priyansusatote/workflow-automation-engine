@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WorkflowExecutionConsumer {
+public class WorkflowExecutionConsumer {  //Spring auto uses error handler (our kafkaErrorConfig)
 
     private final WorkflowExecutionService executionService;
 
@@ -25,6 +25,8 @@ public class WorkflowExecutionConsumer {
         log.info("Kafka Worker received -> executionId={}", event.executionId());
 
         try {
+//            //Temporary Test failure : if (true) throw new RuntimeException("Test failure");
+
             executionService.executeWorkflowFromKafka(
                     event.workflowId(),
                     event.executionId(),
@@ -33,7 +35,7 @@ public class WorkflowExecutionConsumer {
 
         } catch (Exception e) {
             log.error("Execution failed → executionId={}", event.executionId(), e);
-          //  throw e; // important for retry (next step)
+            throw e; // Required for retry (DLQ : which I handled in KafkaErrorConfig)
         }
     }
 
