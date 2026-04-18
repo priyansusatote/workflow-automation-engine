@@ -1,12 +1,15 @@
-package com.priyansu.workflow.event;
+package com.priyansu.worker.consumer;
 
+import com.priyansu.workflow.event.WorkflowExecutionEvent;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+@Profile("worker")
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -14,17 +17,12 @@ public class WorkflowExecutionConsumer {
 
     private final WorkflowExecutionService executionService;
 
-//    // ✅ ADD THIS METHOD
-//    @PostConstruct
-//    public void init() {
-//        log.info("🔥 Consumer bean initialized");
-//    }
 
-    @KafkaListener(topics = "workflow-execution", groupId = "workflow-execution-group")
+    @KafkaListener(topics = "workflow-execution",
+                   groupId = "worker-group")
     public void consume(WorkflowExecutionEvent event) {
 
-
-        log.info("Kafka received -> executionId={}", event.executionId());
+        log.info("Kafka Worker received -> executionId={}", event.executionId());
 
         try {
             executionService.executeWorkflowFromKafka(
@@ -35,7 +33,7 @@ public class WorkflowExecutionConsumer {
 
         } catch (Exception e) {
             log.error("Execution failed → executionId={}", event.executionId(), e);
-            throw e; // important for retry (next step)
+          //  throw e; // important for retry (next step)
         }
     }
 
