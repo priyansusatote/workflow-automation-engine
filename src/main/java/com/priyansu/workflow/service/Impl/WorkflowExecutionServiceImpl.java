@@ -273,45 +273,68 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     public void resumeExecution(UUID executionId) {
 
-        // 1. Get execution
+        //  STEP 1: FETCH EXECUTION RECORD [Get existing workflow execution (must exist to resume)
         WorkflowExecution execution = executionRepository
                 .findById(executionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
 
-        // 2. Get workflowId
+        //  STEP 2: EXTRACT WORKFLOW ID [Required to fetch latest workflow definition
         UUID workflowId = execution.getWorkflowId();
 
-        // 3. Get definition
-        WorkflowDefinition definition = definitionRepository
-                .findTopByWorkflowIdOrderByVersionDesc(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
+        try {
+            log.info("Resuming workflow → executionId={}", executionId);
 
-        JsonNode json = definition.getDefinitionJson();
-        JsonNode nodes = json.get("nodes");
-        JsonNode edges = json.get("edges");
+            // STEP 3: MARK EXECUTION AS RUNNING [Important: update status before resuming execution
+            execution.setStatus(ExecutionStatus.RUNNING);
+            executionRepository.save(execution);
 
-        // 4. Get tasks
-        List<TaskExecution> tasks =
-                taskExecutionRepository.findByWorkflowExecutionIdOrderByCreatedAt(executionId);
+            // STEP 4: LOAD LATEST WORKFLOW DEFINITION [Always resume using latest version of DAG
+            WorkflowDefinition definition = definitionRepository
+                    .findTopByWorkflowIdOrderByVersionDesc(workflowId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
 
-        // 5. Find last FAILED
-        TaskExecution failedTask = tasks.stream()
-                .filter(t -> t.getStatus() == ExecutionStatus.FAILED)
-                .reduce((first, second) -> second)//get the last failed task
-                .orElseThrow(() -> new ResourceNotFoundException("No failed task found"));
+            JsonNode json = definition.getDefinitionJson();
+            JsonNode nodes = json.get("nodes");
+            JsonNode edges = json.get("edges");
 
-        // 6. Find node
-        JsonNode failedNode = findNodeById(nodes, failedTask.getNodeId());
+            // STEP 5: FETCH TASK EXECUTION HISTORY [Used to identify where execution failed
+            List<TaskExecution> tasks =
+                    taskExecutionRepository.findByWorkflowExecutionIdOrderByCreatedAt(executionId);
 
-        // 7. Resume execution
-        WorkflowContext context = new WorkflowContext(new HashMap<>());
+            // STEP 6: FIND LAST FAILED NODE  [We resume from the most recent FAILED task (not from start)
+            TaskExecution failedTask = tasks.stream()
+                    .filter(t -> t.getStatus() == ExecutionStatus.FAILED)
+                    .reduce((first, second) -> second) // get last failed
+                    .orElseThrow(() -> new ResourceNotFoundException("No failed task found"));
 
-        executeNode(failedNode, nodes, edges, context, executionId); //runs failed node
+            // STEP 7: LOCATE FAILED NODE IN DAG
+            JsonNode failedNode = findNodeById(nodes, failedTask.getNodeId());
 
+            //  STEP 8: REBUILD CONTEXT (CURRENT LIMITATION)
+            // NOTE: Context is currently empty → previous data is lost (Will improve later using DB persistence)
+            WorkflowContext context = new WorkflowContext(new HashMap<>());
 
+            //  STEP 9: RESUME EXECUTION FROM FAILED NODE [This will continue normal traversal (including parallel flow)
+            executeNode(failedNode, nodes, edges, context, executionId);
+
+            //  STEP 10: MARK EXECUTION AS SUCCESS [If no exception occurs, workflow completed successfully
+            execution.setStatus(ExecutionStatus.SUCCESS);
+
+        } catch (Exception e) {
+
+            //  STEP 11: HANDLE FAILURE DURING RESUME [If resume fails again → mark execution as FAILED
+            execution.setStatus(ExecutionStatus.FAILED);
+            execution.setErrorMessage(e.getMessage());
+
+            // IMPORTANT: rethrow to trigger Kafka retry / DLQ if needed
+            throw e;
+
+        } finally {
+
+            // STEP 12: PERSIST FINAL STATE  [Ensures DB always reflects latest execution status
+            executionRepository.save(execution);
+        }
     }
-
-
 
 
     private WorkflowExecution createExecution(UUID workflowId) {
