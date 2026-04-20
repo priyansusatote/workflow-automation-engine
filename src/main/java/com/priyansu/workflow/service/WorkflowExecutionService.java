@@ -12,4 +12,6 @@ public interface WorkflowExecutionService {
 
     //Kafka-Method
     void executeWorkflowFromKafka(UUID uuid, UUID uuid1, Map<String, Object> input);
+
+    void resumeExecution(UUID id);
 }

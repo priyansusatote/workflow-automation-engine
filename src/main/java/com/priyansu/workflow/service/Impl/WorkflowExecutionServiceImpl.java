@@ -20,10 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -109,7 +106,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
         WorkflowExecution execution = executionRepository
                 .findById(executionId)
-                .orElseThrow(() -> new RuntimeException("Execution not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
 
         // 🔥 IDEMPOTENCY CHECK {Same message can come twice}{Idempotency ensures that repeated requests or events do not cause duplicate side effects.} [Ensures a Thing(operation) to happens Once , Should only happen once even if repeated"
         if (execution.getStatus() == ExecutionStatus.SUCCESS) {
@@ -166,7 +163,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private void executeNode(JsonNode currentNode,
                              JsonNode nodes,
                              JsonNode edges,
-                             WorkflowContext context, UUID executionId) {
+                             WorkflowContext context,
+                             UUID executionId) {
 
         String nodeId = currentNode.get("id").asText();
         String type = currentNode.get("type").asText();
@@ -272,6 +270,50 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         return execution.getId();
     }
 
+
+    public void resumeExecution(UUID executionId) {
+
+        // 1. Get execution
+        WorkflowExecution execution = executionRepository
+                .findById(executionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
+
+        // 2. Get workflowId
+        UUID workflowId = execution.getWorkflowId();
+
+        // 3. Get definition
+        WorkflowDefinition definition = definitionRepository
+                .findTopByWorkflowIdOrderByVersionDesc(workflowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
+
+        JsonNode json = definition.getDefinitionJson();
+        JsonNode nodes = json.get("nodes");
+        JsonNode edges = json.get("edges");
+
+        // 4. Get tasks
+        List<TaskExecution> tasks =
+                taskExecutionRepository.findByWorkflowExecutionIdOrderByCreatedAt(executionId);
+
+        // 5. Find last FAILED
+        TaskExecution failedTask = tasks.stream()
+                .filter(t -> t.getStatus() == ExecutionStatus.FAILED)
+                .reduce((first, second) -> second)//get the last failed task
+                .orElseThrow(() -> new ResourceNotFoundException("No failed task found"));
+
+        // 6. Find node
+        JsonNode failedNode = findNodeById(nodes, failedTask.getNodeId());
+
+        // 7. Resume execution
+        WorkflowContext context = new WorkflowContext(new HashMap<>());
+
+        executeNode(failedNode, nodes, edges, context, executionId); //runs failed node
+
+
+    }
+
+
+
+
     private WorkflowExecution createExecution(UUID workflowId) {
         WorkflowExecution execution = new WorkflowExecution();
         execution.setWorkflowId(workflowId);
@@ -288,4 +330,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         }
         throw new RuntimeException("Node not found: " + id);
     }
+
+
 }

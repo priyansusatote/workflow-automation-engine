@@ -33,4 +33,12 @@ public class WorkflowExecutionController {
         ));
     }
 
+    @PostMapping("/executions/{id}/resume")
+    public String resume(@PathVariable UUID id) {
+
+        executionService.resumeExecution(id);
+
+        return "Execution resumed";
+    }
+
 }
