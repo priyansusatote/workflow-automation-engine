@@ -188,6 +188,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             task.setStatus(ExecutionStatus.SUCCESS);
             task.setLogMessage("Executed successfully");
 
+
+            task.setOutputData(context.getData());  //Every node stores its data
+
         } catch (Exception e) {
             task.setStatus(ExecutionStatus.FAILED);
             task.setLogMessage(e.getMessage());
@@ -310,9 +313,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             // STEP 7: LOCATE FAILED NODE IN DAG
             JsonNode failedNode = findNodeById(nodes, failedTask.getNodeId());
 
-            //  STEP 8: REBUILD CONTEXT (CURRENT LIMITATION)
-            // NOTE: Context is currently empty → previous data is lost (Will improve later using DB persistence)
-            WorkflowContext context = new WorkflowContext(new HashMap<>());
+            //  STEP 8: [Find last successful node → get its context → resume with correct data]
+            Map<String, Object> lastContext = tasks.stream()
+                    .filter(t -> t.getOutputData() != null)
+                    .reduce((first, second) -> second)
+                    .map(TaskExecution::getOutputData)
+                    .orElse(new HashMap<>());
+            WorkflowContext context = new WorkflowContext(new HashMap<>(lastContext));
 
             //  STEP 9: RESUME EXECUTION FROM FAILED NODE [This will continue normal traversal (including parallel flow)
             executeNode(failedNode, nodes, edges, context, executionId);

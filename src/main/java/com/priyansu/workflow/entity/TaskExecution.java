@@ -6,7 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -28,6 +31,10 @@ public class TaskExecution extends BaseEntity { //for: each NODE-LEVEL LOGGING &
 
     @Enumerated(EnumType.STRING)
     private ExecutionStatus status;
+
+    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> outputData; //Store context snapshot at each node
 
     private String logMessage;
 }
