@@ -1,6 +1,7 @@
 package com.priyansu.workflow.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -37,5 +38,25 @@ public class GlobalExceptionHandler {
                 "status", 500,
                 "message", ex.getMessage()
         );
+    }
+
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<?> handleUserExists(UserAlreadyExistsException ex) {
+        return build(400, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<?> handleInvalid(InvalidCredentialsException ex) {
+        return build(401, ex.getMessage());
+    }
+
+    private ResponseEntity<?> build(int status, String message) {
+        return ResponseEntity.status(status)
+                .body(Map.of(
+                        "status", status,
+                        "error", HttpStatus.valueOf(status).getReasonPhrase(),
+                        "message", message
+                ));
     }
 }

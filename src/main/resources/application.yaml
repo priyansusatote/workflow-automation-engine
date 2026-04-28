@@ -46,4 +46,7 @@ logging:
     org.apache.kafka: WARN
     com.priyansu.workflow: DEBUG
 
-#debug: true
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: 3600000
+
