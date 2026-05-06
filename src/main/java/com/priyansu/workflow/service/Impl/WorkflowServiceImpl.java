@@ -7,6 +7,8 @@ import com.priyansu.workflow.exception.DuplicateResourceException;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.mapper.WorkflowMapper;
 import com.priyansu.workflow.repository.WorkflowRepository;
+import com.priyansu.workflow.security.JwtUserPrincipal;
+import com.priyansu.workflow.security.SecurityUtils;
 import com.priyansu.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,22 +23,23 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowRepository workflowRepository;
     private final WorkflowMapper workflowMapper;
 
-    //temp for testing
-    private final UUID DEFAULT_USER_ID =
-            UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+
 
 
     @Override
     public WorkflowResponse createWorkflow(WorkflowRequest request) {
+
+        UUID userId = SecurityUtils.getCurrentUser().userId(); // current user
+
         //check if already exists
-        if (workflowRepository.existsByNameAndUserId(request.name(), DEFAULT_USER_ID)) {
+        if (workflowRepository.existsByNameAndUserId(request.name(), userId)) {
             throw new DuplicateResourceException("Workflow already exists");
         }
 
         Workflow workflow = workflowMapper.toEntity(request);
 
-        // TEMP FIX (simulate logged-in user)
-        workflow.setUserId(DEFAULT_USER_ID);
+        // (simulate logged-in user) set ownership of workflow
+        workflow.setUserId(userId);
 
         Workflow savedWorkflow = workflowRepository.save(workflow);
 
@@ -78,5 +81,12 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
 
         workflowRepository.delete(workflow);
+    }
+
+    @Override
+    public List<Workflow> getMyWorkflows() {
+        UUID userId = SecurityUtils.getCurrentUser().userId();
+
+        return workflowRepository.findByUserId(userId);
     }
 }

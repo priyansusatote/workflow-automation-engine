@@ -2,9 +2,11 @@ package com.priyansu.workflow.controller;
 
 import com.priyansu.workflow.dto.WorkflowRequest;
 import com.priyansu.workflow.dto.WorkflowResponse;
+import com.priyansu.workflow.entity.Workflow;
 import com.priyansu.workflow.service.WorkflowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,9 +24,16 @@ public class WorkflowController {
         return workflowService.createWorkflow(request);
     }
 
-    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin")
     public List<WorkflowResponse> getAll(){
         return workflowService.getAllWorkflows();
+    }
+
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @GetMapping
+    public List<Workflow> getMyWorkflows() {
+        return workflowService.getMyWorkflows();
     }
 
     @GetMapping("/{id}")
@@ -32,6 +41,7 @@ public class WorkflowController {
         return workflowService.getWorkflowById(id);
     }
 
+    @PreAuthorize("@workflowSecurity.isOwner(#workflowId)")
     @PutMapping("/{id}")
     public WorkflowResponse update(
             @PathVariable UUID id,
@@ -39,6 +49,7 @@ public class WorkflowController {
         return workflowService.updateWorkflow(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#workflowId)")
     @DeleteMapping("/{id}")
     public String delete(@PathVariable UUID id){
         workflowService.deleteWorkflow(id);

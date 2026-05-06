@@ -3,6 +3,7 @@ package com.priyansu.workflow.service;
 
 import com.priyansu.workflow.dto.WorkflowRequest;
 import com.priyansu.workflow.dto.WorkflowResponse;
+import com.priyansu.workflow.entity.Workflow;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -19,4 +20,6 @@ public interface WorkflowService {
     WorkflowResponse updateWorkflow(UUID id,  WorkflowRequest request);
 
     void deleteWorkflow(UUID id);
+
+    List<Workflow> getMyWorkflows();
 }

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 import java.util.function.Function;
@@ -32,14 +33,14 @@ public class JwtService {
 
     //Generate Token
     public String generateToken(User user) {
-
+        Instant now = Instant.now();
         return Jwts.builder()
                 .id(UUID.randomUUID().toString()) //jti = JWT ID [A unique identifier for each token][jti token id -unique per token) {use for logout , token blacklist , better security etc..)
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
                 .claim("role", user.getRole().name())
-                .issuedAt(new Date()) //Current system time (now)
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .issuedAt(Date.from(now)) //Current system time (now)
+                .expiration(Date.from(now.plusMillis(jwtExpiration)))
                 .signWith(getSignKey())
                 .compact();
     }

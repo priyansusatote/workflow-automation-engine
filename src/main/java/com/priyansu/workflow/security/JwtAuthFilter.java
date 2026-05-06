@@ -40,7 +40,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String token = authHeader.substring(7);
+            String token = authHeader.substring(7).trim(); //trim extra spaces
+
+            // ✅ Only process if SecurityContext is empty (avoid re-processing)
+            if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             Claims claims = jwtService.extractAllClaims(token);
 
@@ -61,7 +67,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             authorities
                     );
 
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request)); // Attaches extra HTTP request metadata (IP address, session ID) to the authentication token — used by Spring Security for audit logging, security event tracking, and fraud detection tools like Spring Session. Not required for basic JWT auth, but good practice for production systems.
 
             SecurityContextHolder.getContext().setAuthentication(authToken);
 

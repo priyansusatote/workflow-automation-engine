@@ -47,6 +47,7 @@ public class AuthService {
         return jwtService.generateToken(user);
     }
 
+    //for Registration
     //a password validation method using a regex (regular expression)
     //Password must have: 1 uppercase letter , 1 digit , 1 special character , minimum 8 length
     private void validatePassword(String password) {
