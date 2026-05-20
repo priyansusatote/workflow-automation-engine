@@ -45,6 +45,7 @@ public class JwtService {
                 .compact();
     }
 
+
     //Validate & extract userDetails [If token is:expired,tampered,invalid :> It will THROW: exception
     public Claims extractAllClaims(String token) {
         return Jwts.parser()
