@@ -40,8 +40,17 @@ services:
 
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'  # static ID (important for KRaft)
 
+  redis:
+    image: redis:7-alpine
+    container_name: workflow-redis
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
 
 
 volumes:
   postgres_data:
   kafka-data:
+  redis_data:

@@ -9,6 +9,8 @@ import com.priyansu.workflow.exception.InvalidCredentialsException;
 import com.priyansu.workflow.exception.UserAlreadyExistsException;
 import com.priyansu.workflow.repository.RefreshTokenRepository;
 import com.priyansu.workflow.repository.UserRepository;
+import com.priyansu.workflow.service.TokenBlacklistService;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.security.auth.Login;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +27,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public void signup(AuthRequest request) {
 
@@ -92,5 +95,24 @@ public class AuthService {
         //if refresh token is validated then only generate new access token
         //  generate NEW access token
         return jwtService.generateToken(token.getUser());
+    }
+
+
+    public void logout(String refreshToken, String accessToken) {
+
+        //  Revoke refresh token
+        RefreshToken token = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid refresh token"));
+
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+
+        //  Blacklist access token
+        Claims claims = jwtService.extractAllClaims(accessToken);
+
+        String jti = claims.getId();
+        long remainingTime = claims.getExpiration().getTime() - System.currentTimeMillis();
+
+        tokenBlacklistService.blacklist(jti, remainingTime);
     }
 }

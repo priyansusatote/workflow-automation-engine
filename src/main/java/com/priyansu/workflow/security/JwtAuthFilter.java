@@ -1,5 +1,6 @@
 package com.priyansu.workflow.security;
 
+import com.priyansu.workflow.service.TokenBlacklistService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -49,6 +51,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             Claims claims = jwtService.extractAllClaims(token);
+
+            String jti = claims.getId();
+            if (tokenBlacklistService.isBlacklisted(jti)) {
+                throw new JwtException("Token blacklisted");
+            }
 
             String email = claims.getSubject();
             UUID userId = UUID.fromString(claims.get("userId").toString());
