@@ -13,7 +13,7 @@ public class TokenBlacklistService {
     private final StringRedisTemplate redisTemplate;
 
     public void blacklist(String jti, long expiryMillis) {
-        redisTemplate.opsForValue().set(jti, "blacklisted", Duration.ofMillis(expiryMillis));
+        redisTemplate.opsForValue().set(jti, "blacklisted", Duration.ofMillis(expiryMillis)); //// Store token ID in Redis blacklist until JWT naturally expires
     }
 
     public boolean isBlacklisted(String jti) {
