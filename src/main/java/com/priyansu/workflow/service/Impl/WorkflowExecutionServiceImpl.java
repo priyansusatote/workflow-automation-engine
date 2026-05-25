@@ -9,6 +9,7 @@ import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import com.priyansu.workflow.event.WorkflowExecutionEvent;
 import com.priyansu.workflow.event.WorkflowExecutionProducer;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
+import com.priyansu.workflow.exception.WorkflowValidationException;
 import com.priyansu.workflow.execution.WorkflowContext;
 import com.priyansu.workflow.executor.ExecutorFactory;
 import com.priyansu.workflow.executor.TaskExecutor;
@@ -137,7 +138,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             }
 
             if (startNode == null) {
-                throw new RuntimeException("No trigger node found");
+                throw new WorkflowValidationException("No trigger node found");
             }
 
             //  Use input here (IMPORTANT)
@@ -237,6 +238,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 }
             }
         }
+
+        log.info(
+                "Node={} discovered {} next nodes",
+                nodeId,
+                nextNodes.size()
+        );
+
         // 🔥 PARALLEL EXECUTION {Execute → find ALL next nodes → run in parallel}
         List<Future<?>> futures = new ArrayList<>(); //Future = a handle/reference to an async task [Helps you: wait for completion,get result,catch exceptions]
 
