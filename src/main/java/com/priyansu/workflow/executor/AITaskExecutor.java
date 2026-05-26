@@ -6,6 +6,7 @@ import com.priyansu.workflow.dto.ai.AIResponse;
 import com.priyansu.workflow.exception.WorkflowValidationException;
 import com.priyansu.workflow.execution.WorkflowContext;
 import com.priyansu.workflow.service.AIService;
+import com.priyansu.workflow.service.ai.PromptTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class AITaskExecutor implements TaskExecutor {
 
     private final AIService aiService;
+    private final PromptTemplateService promptTemplateService;
 
     @Override
     public String getType() {
@@ -44,7 +46,14 @@ public class AITaskExecutor implements TaskExecutor {
             );
         }
 
-        String prompt = promptNode.asText();
+        String promptTemplate = promptNode.asText(); //RAW TEMPLATE
+        //RENDER FINAL PROMPT
+        String prompt = promptTemplateService.render(
+                promptTemplate,
+                context
+        );
+        log.info("Rendered AI prompt → {}", prompt);
+
 
         String model = config.has("model") ? config.get("model").asText() : null; //for future flexibility. [different workflow nodes→ different LLMs
 
