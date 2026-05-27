@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 @Service
 public class PromptTemplateService {
 
-    //It finds:{{something_text}} inside prompt. Then replaces with actual workflow data.
+    //It finds:{{somethingText}} inside prompt. Then replaces with actual workflow data. [[we can pass prompt like(input.text)=> input: text:} inside /execute endpoint's Body]]
     //ex:Template: Summarize: {{input.text}}   Result:  Summarize: Kafka is distributed...
     public String render(String template, WorkflowContext context) {
 
