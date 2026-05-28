@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.priyansu.workflow.dto.ai.AIRequest;
 import com.priyansu.workflow.dto.ai.AIResponse;
 import com.priyansu.workflow.service.AIService;
+import com.priyansu.workflow.service.WorkflowValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
 
     private final AIService aiService;
     private final ObjectMapper objectMapper;
+    private final WorkflowValidationService validationService;
 
     @Override
     public String generateWorkflow(String userPrompt) {
@@ -163,6 +165,9 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
             JsonNode jsonNode = objectMapper.readTree(
                     response.content()
             );
+
+            //validate generated workflow
+            validationService.validate(jsonNode);
 
             return objectMapper.writeValueAsString(jsonNode);
 
