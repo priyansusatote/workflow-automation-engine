@@ -3,14 +3,14 @@ package com.priyansu.workflow.execution;
 import java.util.HashMap;
 import java.util.Map;
 
-//context = data flowing through workflow
+//context = data flowing through workflow  , [WorkflowContext = shared memory between workflow nodes]
 //Why Map? => Flexible, Dynamic keys, Matches JSON
 public class WorkflowContext {
 
     private final Map<String, Object> data = new HashMap<>();
 
 
-    public WorkflowContext(Map<String, Object> input) {
+    public WorkflowContext(Map<String, Object> input) { //Constructor
         if (input != null) {
             data.putAll(input);
         }
