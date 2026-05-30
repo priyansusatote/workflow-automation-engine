@@ -19,17 +19,20 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
 
 
     @Override
-    public void validate(JsonNode workflow) {
+    public List<String> validate(JsonNode workflow) {
+
+        //store all validation errors [helpful to send back to AI and AI corrects it]
+        List<String> errors = new ArrayList<>();
 
         //1: Check Nodes/Edges Exists
         JsonNode nodes = workflow.get("nodes");
         JsonNode edges = workflow.get("edges");
 
         if (nodes == null || !nodes.isArray()) {
-            throw new WorkflowValidationException("workflow missing nodes array");
+            errors.add("workflow missing nodes array");
         }
         if (edges == null || !edges.isArray()) {
-            throw new WorkflowValidationException("workflow missing edges array");
+            errors.add("workflow missing edges array");
         }
 
         //2: Unique Nodes Ids
@@ -38,7 +41,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             String id = node.get("id").asText();
 
             if (!nodeIds.add(id)) {
-                throw new WorkflowValidationException(
+                errors.add(
                         "Duplicate node id: " + id
                 );
             }
@@ -57,7 +60,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             String type = node.get("type").asText();
 
             if (!supportedTypes.contains(type)) {
-                throw new WorkflowValidationException(
+                errors.add(
                         "Unsupported node type: " + type
                 );
             }
@@ -70,13 +73,13 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             String to = edge.get("to").asText();
 
             if (!nodeIds.contains(from)) {
-                throw new WorkflowValidationException(
+                errors.add(
                         "Edge references missing node: " + from
                 );
             }
 
             if (!nodeIds.contains(to)) {
-                throw new WorkflowValidationException(
+                errors.add(
                         "Edge references missing node: " + to
                 );
             }
@@ -93,7 +96,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             }
         }
         if (!hasTrigger) {
-            throw new WorkflowValidationException(
+            errors.add(
                     "Workflow must contain TRIGGER node"
             );
         }
@@ -117,7 +120,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
 
                 // Must have exactly 2 outgoing edges [one for true, and one for false]
                 if (outgoing.size() != 2) {
-                    throw new WorkflowValidationException(
+                    errors.add(
                             "AI_DECISION node must have exactly 2 outgoing edges"
                     );
                 }
@@ -129,7 +132,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                     JsonNode conditionNode = edge.get("condition");
 
                     if (conditionNode == null) {
-                        throw new WorkflowValidationException(
+                        errors.add(
                                 "Decision edge missing condition"
                         );
                     }
@@ -141,7 +144,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                 if (!conditions.contains("true")
                         || !conditions.contains("false")) {
 
-                    throw new WorkflowValidationException(
+                    errors.add(
                             "Decision node must contain true/false edges"
                     );
                 }
@@ -150,6 +153,6 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             }
         }
 
-
+        return errors;
     }
 }

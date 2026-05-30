@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.priyansu.workflow.dto.ai.AIRequest;
 import com.priyansu.workflow.dto.ai.AIResponse;
+import com.priyansu.workflow.exception.AIExecutionException;
 import com.priyansu.workflow.service.AIService;
 import com.priyansu.workflow.service.WorkflowValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +23,7 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
     private final WorkflowValidationService validationService;
 
     @Override
-    public String generateWorkflow(String userPrompt) {
+    public String generateWorkflow(String userPrompt) { //self-healing AI workflow generation (by validation adding)
         String prompt = """ 
                                 You are a workflow generation AI.
                 
@@ -160,16 +163,75 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
         //Execute
         AIResponse response = aiService.generate(request);
 
-        //PARSE SAFELY
+        //PARSE SAFELY  { AI generates String response so Parsing :Convert JSON text (String) into a JsonNode object so Java can read and validate it [// Convert AI-generated JSON string into JsonNode for validation and processing]
         try {
             JsonNode jsonNode = objectMapper.readTree(
                     response.content()
             );
 
             //validate generated workflow
-            validationService.validate(jsonNode);
+            List<String> errors = validationService.validate(jsonNode);
+            //if Valid
+            if (errors.isEmpty()) {
+                return objectMapper.writeValueAsString(jsonNode);
+            }
 
-            return objectMapper.writeValueAsString(jsonNode);
+            // Build repair prompt
+            String repairPrompt = """
+                    The generated workflow JSON is invalid.
+                    
+                    Validation errors:
+                    %s
+                    
+                    Fix the workflow.
+                    
+                    RULES:
+                    - Return ONLY valid JSON
+                    - No markdown
+                    - Preserve original workflow intent
+                    - Fix ALL validation errors
+                    
+                    Broken Workflow JSON:
+                    %s
+                    """.formatted(
+                    String.join("\n", errors),
+                    jsonNode.toPrettyString()
+            );
+            // Build repair request
+            AIRequest repairRequest = new AIRequest(
+                    repairPrompt,
+                    null,
+                    0.1
+            );
+
+            // Call AI again
+            AIResponse repairResponse =
+                    aiService.generate(repairRequest);
+
+            // Parse repaired workflow
+            JsonNode repairedWorkflow = objectMapper.readTree(
+                            repairResponse.content()
+                    );
+
+            // Validate again
+            List<String> repairedErrors =
+                    validationService.validate(
+                            repairedWorkflow
+                    );
+
+            // Final check
+            if (!repairedErrors.isEmpty()) {
+
+                throw new AIExecutionException(
+                        "AI failed to repair workflow: "
+                                + repairedErrors
+                );
+            }
+
+            // Success
+            return objectMapper.writeValueAsString(
+                    repairedWorkflow
+            );
 
         } catch (Exception e) {
             log.error(
