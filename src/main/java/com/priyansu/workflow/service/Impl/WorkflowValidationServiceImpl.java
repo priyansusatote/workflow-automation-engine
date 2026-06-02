@@ -53,7 +53,8 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                 "ACTION",
                 "AI_GENERATE",
                 "AI_DECISION",
-                "WAIT"
+                "WAIT",
+                "AI_EXTRACT"
         );
         //VALIDATE
         for (JsonNode node : nodes) {

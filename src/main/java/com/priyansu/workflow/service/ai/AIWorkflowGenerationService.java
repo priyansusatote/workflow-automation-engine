@@ -68,6 +68,7 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
                                 * AI_GENERATE
                                 * AI_DECISION
                                 * WAIT
+                                * AI_EXTRACT
                 
                                 AI NODE RULES:
                 
