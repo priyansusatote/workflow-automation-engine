@@ -2,6 +2,7 @@ package com.priyansu.workflow.service.ai;
 
 import com.priyansu.workflow.execution.WorkflowContext;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -49,11 +50,28 @@ public class PromptTemplateService {
 
         for (int i = 1; i < parts.length; i++) {
 
-            if (!(current instanceof Map<?, ?> map)) {
+            if (current instanceof Map<?, ?> map) {
+
+                current = map.get(parts[i]);
+
+            } else if (current instanceof JsonNode jsonNode) {
+
+                JsonNode child = jsonNode.get(parts[i]);
+
+                if (child == null || child.isNull()) {
+                    return null;
+                }
+
+                // keep JsonNode if it's an object
+                if (child.isObject()) {
+                    current = child;
+                } else {
+                    current = child.asText();
+                }
+
+            } else {
                 return null;
             }
-
-            current = map.get(parts[i]);
         }
 
         return current;

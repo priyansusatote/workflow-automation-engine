@@ -20,7 +20,8 @@ public record WorkflowDefinitionRequest(
 
     public record Edge(
             String from,
-            String to
+            String to,
+            String condition
     ) {
     }
 }

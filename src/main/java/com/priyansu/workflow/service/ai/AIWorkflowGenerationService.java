@@ -67,8 +67,10 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
                                 * ACTION
                                 * AI_GENERATE
                                 * AI_DECISION
+                                * AI_CLASSIFY
                                 * WAIT
                                 * AI_EXTRACT
+                                * RULE
                 
                                 AI NODE RULES:
                 
@@ -90,6 +92,16 @@ public class AIWorkflowGenerationService implements WorkflowGenerationService {
                                   "config": {
                                   "duration": "5m"
                                   }
+                                  }
+                                  
+                                 * RULE NODE FORMAT:
+                
+                                  {
+                                    "id":"3",
+                                    "type":"RULE",
+                                    "config":{
+                                        "expression":"{{2_result.amount}} > 10000"
+                                    }
                                   }
                 
                                 EDGE RULES:

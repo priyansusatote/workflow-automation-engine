@@ -4,5 +4,6 @@ public enum NodeType {
     AI_GENERATE,
     AI_DECISION,
     AI_CLASSIFY,
-    AI_EXTRACT
+    AI_EXTRACT,
+    RULE
 }

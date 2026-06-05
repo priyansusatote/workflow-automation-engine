@@ -1,10 +1,15 @@
 package com.priyansu.workflow.executor;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.priyansu.workflow.exception.WorkflowValidationException;
 import com.priyansu.workflow.execution.WorkflowContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
+@Slf4j
 public class ActionExecutor implements TaskExecutor {
 
     @Override
@@ -14,8 +19,22 @@ public class ActionExecutor implements TaskExecutor {
 
     @Override
     public void execute(JsonNode node, WorkflowContext context) {
-        System.out.println("Action executed");
+        log.info("Action executed");
 
-        context.put("actionDone", true);
+
+        //save to Context
+        JsonNode config = node.get("config");
+        if (config == null || config.isNull()) {
+            throw new WorkflowValidationException("ACTION node missing config");
+        }
+        String actionType = config.get("actionType").asText();
+
+        context.put(
+                node.get("id").asText() + "_result",
+                Map.of(
+                        "actionType", actionType,
+                        "executed", true
+                )
+        );
     }
 }

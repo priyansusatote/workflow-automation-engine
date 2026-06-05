@@ -45,7 +45,13 @@ public class AIClassifyTaskExecutor implements TaskExecutor {
         }
 
         //2: Read prompt (which is inside Config)
-        String promptTemplate = config.get("prompt").asText();
+        JsonNode promptNode = config.get("prompt");
+        if (promptNode == null || promptNode.isNull()) {
+            throw new WorkflowValidationException(
+                    "AI_CLASSIFY node missing prompt"
+            );
+        }
+        String promptTemplate = promptNode.asText();
 
         //3: Render
         String prompt = promptTemplateService.render(promptTemplate, context);
@@ -66,9 +72,13 @@ public class AIClassifyTaskExecutor implements TaskExecutor {
             labels.add(label.asText());
         }
 
+
         //7: Build Classification Prompt
         String classificationPrompt = """
                 Classify the input.
+                
+                Allowed Labels:
+                %s
                 
                 Return ONLY valid JSON.
                 
@@ -77,9 +87,6 @@ public class AIClassifyTaskExecutor implements TaskExecutor {
                   "label":"one_of_allowed_labels"
                 }
                 
-                Allowed Labels:
-                %s
-                
                 Input:
                 %s
                 """.formatted(
@@ -87,12 +94,17 @@ public class AIClassifyTaskExecutor implements TaskExecutor {
                 prompt
         );
 
+        //log
+        log.info("Executing AI classification -> nodeId={}, labels={}",
+                node.get("id").asText(),
+                labels
+        );
         //8: Call AI
         AIRequest request = new AIRequest(
-                        classificationPrompt,
-                        null,
-                        0.1
-                );
+                classificationPrompt,
+                null,
+                0.1
+        );
 
 
         //9:Execute
@@ -102,23 +114,35 @@ public class AIClassifyTaskExecutor implements TaskExecutor {
         try {
             //10: Parse Response
             JsonNode classification = objectMapper.readTree(response.content());
+
             //11: Validate Label
-            String label =
-                    classification.get("label")
-                            .asText();
+            JsonNode labelNode = classification.get("label");
+            if (labelNode == null || labelNode.isNull()) {
+                throw new AIExecutionException(
+                        "AI response missing label field"
+                );
+            }
+            String label = labelNode.asText();
+
+
             //check
-            if(!labels.contains(label)) {
-                throw new WorkflowValidationException("AI returned invalid label: " + label);
+            if (!labels.contains(label)) {
+                throw new WorkflowValidationException("AI_CLASSIFY returned invalid label: " + label);
             }
 
             //12: Store in Context
-            //context.put("classification", label);
             context.put(node.get("id").asText() + "_result", classification);
+
+            //log
+            log.info(
+                    "AI classification completed -> nodeId={}, label={}",
+                    node.get("id").asText(),
+                    label
+            );
 
         } catch (JsonProcessingException e) {
             throw new AIExecutionException("AI returned invalid JSON");
         }
-
 
 
     }

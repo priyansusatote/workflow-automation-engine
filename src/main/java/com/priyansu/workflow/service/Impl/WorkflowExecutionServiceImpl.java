@@ -211,9 +211,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             if (edge.get("from").asText().equals(nodeId)) {
 
                 // 🔥 DECISION NODE HANDLING
-                if ("DECISION".equals(type)) {
+                if ("DECISION".equals(type) || "RULE".equals(type)) {
 
-                    boolean decision = (boolean) context.get("decisionResult");
+                    boolean decision;
+                    if ("DECISION".equals(type)) {
+                        decision = (boolean) context.get("decisionResult");
+                    } else {
+                        decision = (boolean) context.get("ruleResult");
+                    }
 
 
                     JsonNode conditionNode = edge.get("condition");
@@ -228,12 +233,20 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                         String nextId = edge.get("to").asText();
                         nextNodes.add(findNodeById(nodes, nextId));
 
+                        //log
+                        log.info("RULE/DECISION matched -> node={}, decision={}, edgeCondition={}, nextNode={}",
+                                nodeId,
+                                decision,
+                                condition,
+                                edge.get("to").asText());
                     }
 
                 } else {
                     // 🔥 NORMAL FLOW (no condition required, ALL edges allowed)
 
                     String nextId = edge.get("to").asText();
+                    //log
+                    log.info("Adding next node -> {}", nextId);
                     nextNodes.add(findNodeById(nodes, nextId));
                 }
             }
