@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -146,7 +147,21 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
             executeNode(startNode, nodes, edges, context, executionId);
 
-            execution.setStatus(ExecutionStatus.SUCCESS);
+            // reload latest state from DB
+            execution = executionRepository
+                    .findById(executionId)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException("Execution not found")
+                    );
+
+            // only mark SUCCESS if workflow is not waiting
+            if (execution.getStatus() != ExecutionStatus.WAITING) {
+
+                execution.setStatus(
+                        ExecutionStatus.SUCCESS
+                );
+            }
+
 
         } catch (Exception e) {
             execution.setStatus(ExecutionStatus.FAILED);
@@ -157,8 +172,6 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             executionRepository.save(execution);
         }
     }
-
-
 
 
     private void executeNode(JsonNode currentNode,
@@ -183,8 +196,19 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                     Thread.currentThread().getName(), type, nodeId);
 
             //  Strategy Pattern used here (Execute current node)
-            TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, etc...
+            TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, WAIT etc...
             executor.execute(currentNode, context);
+
+            // WAIT nodes pause workflow execution
+            if ("WAIT".equals(type)) {
+                pauseExecution(
+                        executionId,
+                        currentNode,
+                        context
+                );
+                return;
+            }
+
 
             task.setStatus(ExecutionStatus.SUCCESS);
             task.setLogMessage("Executed successfully");
@@ -325,25 +349,74 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             List<TaskExecution> tasks =
                     taskExecutionRepository.findByWorkflowExecutionIdOrderByCreatedAt(executionId);
 
-            // STEP 6: FIND LAST FAILED NODE  [We resume from the most recent FAILED task (not from start)
-            TaskExecution failedTask = tasks.stream()
-                    .filter(t -> t.getStatus() == ExecutionStatus.FAILED)
-                    .reduce((first, second) -> second) // get last failed
-                    .orElseThrow(() -> new ResourceNotFoundException("No failed task found"));
-
-            // STEP 7: LOCATE FAILED NODE IN DAG
-            JsonNode failedNode = findNodeById(nodes, failedTask.getNodeId());
-
-            //  STEP 8: [Find last successful node → get its context → resume with correct data]
+            // STEP 6: Restore latest workflow context
             Map<String, Object> lastContext = tasks.stream()
                     .filter(t -> t.getOutputData() != null)
                     .reduce((first, second) -> second)
                     .map(TaskExecution::getOutputData)
                     .orElse(new HashMap<>());
+
             WorkflowContext context = new WorkflowContext(new HashMap<>(lastContext));
 
-            //  STEP 9: RESUME EXECUTION FROM FAILED NODE [This will continue normal traversal (including parallel flow)
-            executeNode(failedNode, nodes, edges, context, executionId);
+            JsonNode resumeNode;
+
+            // WAITING workflow
+            if (execution.getWaitingNodeId() != null) {
+
+                log.info(
+                        "Resuming WAIT workflow from node={}",
+                        execution.getWaitingNodeId()
+                );
+
+                JsonNode waitingNode = findNodeById(nodes, execution.getWaitingNodeId());
+
+                // find next node after WAIT
+                String nextNodeId = null;
+
+                for (JsonNode edge : edges) {
+
+                    if (edge.get("from").asText()
+                            .equals(waitingNode.get("id").asText())) {
+
+                        nextNodeId = edge.get("to").asText();
+                        break;
+                    }
+                }
+
+                if (nextNodeId == null) {
+                    throw new ResourceNotFoundException(
+                            "No next node found after WAIT node"
+                    );
+                }
+
+                resumeNode = findNodeById(nodes, nextNodeId);
+
+                execution.setWaitingNodeId(null);
+                execution.setResumeAt(null);
+
+            } else {
+
+                // STEP 6: FIND LAST FAILED NODE  [We resume from the most recent FAILED task (not from start)
+                TaskExecution failedTask = tasks.stream()
+                        .filter(t -> t.getStatus() == ExecutionStatus.FAILED)
+                        .reduce((first, second) -> second)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "No failed task found"
+                                ));
+
+                // STEP 7: LOCATE FAILED NODE IN DAG
+                resumeNode = findNodeById(nodes, failedTask.getNodeId());
+            }
+
+            // STEP 9: RESUME EXECUTION FROM FAILED/WAITING NODE [This will continue normal traversal (including parallel flow)
+            executeNode(
+                    resumeNode,
+                    nodes,
+                    edges,
+                    context,
+                    executionId
+            );
 
             //  STEP 10: MARK EXECUTION AS SUCCESS [If no exception occurs, workflow completed successfully
             execution.setStatus(ExecutionStatus.SUCCESS);
@@ -382,5 +455,62 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         throw new RuntimeException("Node not found: " + id);
     }
 
+
+    private void pauseExecution(
+            UUID executionId,
+            JsonNode waitNode,
+            WorkflowContext context) {
+
+        WorkflowExecution execution =
+                executionRepository
+                        .findById(executionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Execution not found"
+                                ));
+
+        String duration =
+                (String) context.get("waitDuration");
+
+        LocalDateTime resumeAt =
+                LocalDateTime.now()
+                        .plusSeconds(
+                                parseSeconds(duration)
+                        );
+
+        execution.setStatus(
+                ExecutionStatus.WAITING
+        );
+
+        execution.setResumeAt(resumeAt);
+
+        execution.setWaitingNodeId(
+                waitNode.get("id").asText()
+        );
+
+        executionRepository.save(execution);
+
+        log.info(
+                "Workflow paused -> executionId={}, resumeAt={}",
+                executionId,
+                resumeAt
+        );
+    }
+
+    //helper
+    private long parseSeconds(String duration) {
+
+        if (duration.endsWith("s")) {
+
+            return Long.parseLong(
+                    duration.replace("s", "")
+            );
+        }
+
+        throw new WorkflowValidationException(
+                "Unsupported WAIT duration: "
+                        + duration
+        );
+    }
 
 }

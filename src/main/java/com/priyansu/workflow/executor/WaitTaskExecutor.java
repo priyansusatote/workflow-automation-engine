@@ -10,13 +10,14 @@ import java.util.Map;
 
 @Component
 @Slf4j
-public class WaitTaskExecutor implements TaskExecutor {
+public class WaitTaskExecutor implements TaskExecutor { //WAIT executor should only: Validate, Read duration ,Store duration Only
 
     @Override
     public String getType() {
         return "WAIT";
     }
 
+    //updated phase-2 code: WAIT Executor →  Store duration → WorkflowExecutionService pauses workflow →  Scheduler resumes later
     @Override
     public void execute(JsonNode node, WorkflowContext context) {
 
@@ -28,52 +29,35 @@ public class WaitTaskExecutor implements TaskExecutor {
             );
         }
 
-        String duration = config.get("duration").asText();
+        JsonNode durationNode = config.get("duration");
 
-        long millis = parseDuration(duration);
+        if (durationNode == null || durationNode.isNull()) {
+            throw new WorkflowValidationException(
+                    "WAIT node missing duration"
+            );
+        }
+
+        String duration = durationNode.asText();
 
         log.info(
-                "WAIT started -> duration={}",
+                "WAIT node reached -> duration={}",
                 duration
         );
 
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new RuntimeException(
-                    "WAIT interrupted"
-            );
-        }
+        // Store duration in context.
+        // WorkflowExecutionService will pause execution.
+        context.put(
+                "waitDuration",
+                duration
+        );
 
         context.put(
                 node.get("id").asText() + "_result",
                 Map.of(
-                        "waited", duration
+                        "waitDuration", duration
                 )
         );
-
-        log.info(
-                "WAIT completed -> duration={}",
-                duration
-        );
     }
 
 
-    private long parseDuration(String duration) {
-
-        if (duration.endsWith("s")) {
-
-            return Long.parseLong(
-                    duration.replace("s", "")
-            ) * 1000;
-
-        }
-
-        throw new WorkflowValidationException(
-                "Unsupported WAIT duration: "
-                        + duration
-        );
-    }
 }
