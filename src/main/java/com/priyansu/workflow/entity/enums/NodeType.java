@@ -5,5 +5,10 @@ public enum NodeType {
     AI_DECISION,
     AI_CLASSIFY,
     AI_EXTRACT,
-    RULE
+
+    RULE,
+    WAIT,
+
+    HTTP_ACTION
+
 }
