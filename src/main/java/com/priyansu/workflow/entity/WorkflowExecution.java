@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -27,4 +28,8 @@ public class WorkflowExecution extends BaseEntity{   //EXECUTION TRACKING && log
     private ExecutionStatus status;
 
     private String errorMessage;
+
+    private LocalDateTime resumeAt;
+
+    private String waitingNodeId;
 }

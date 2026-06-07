@@ -4,4 +4,5 @@ public enum ExecutionStatus {
     RUNNING,
     SUCCESS,
     FAILED,
+    WAITING
 }
