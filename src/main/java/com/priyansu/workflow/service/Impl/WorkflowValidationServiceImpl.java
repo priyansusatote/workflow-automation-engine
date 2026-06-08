@@ -50,13 +50,18 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
         //3: VALIDATE NODE TYPES
         Set<String> supportedTypes = Set.of(
                 "TRIGGER",
+                "WEBHOOK_TRIGGER",
+
                 "ACTION",
+                "HTTP_ACTION",
+
                 "AI_GENERATE",
                 "AI_DECISION",
-                "WAIT",
                 "AI_EXTRACT",
                 "AI_CLASSIFY",
-                "RULE"
+
+                "RULE",
+                "WAIT"
         );
         //VALIDATE
         for (JsonNode node : nodes) {
@@ -87,21 +92,87 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                 );
             }
         }
+        //4.1 Duplicate Edge Validation
+        Set<String> edgeKeys = new HashSet<>();
+
+        for (JsonNode edge : edges) {
+            String key = edge.get("from").asText()
+                    + "->"
+                    + edge.get("to").asText();
+
+            if (!edgeKeys.add(key)) {
+                errors.add("Duplicate edge: " + key);
+            }
+        }
 
 
-        //5:VALIDATE TRIGGER EXISTS
-        boolean hasTrigger = false;
+
+        //5: VALIDATE EXACTLY ONE TRIGGER
+        int triggerCount = 0;
 
         for (JsonNode node : nodes) {
             String type = node.get("type").asText();
-            if ("TRIGGER".equals(type)) {
-                hasTrigger = true;
+            if ("TRIGGER".equals(type)
+                    || "WEBHOOK_TRIGGER".equals(type)) {
+                triggerCount++;
             }
         }
-        if (!hasTrigger) {
-            errors.add(
-                    "Workflow must contain TRIGGER node"
-            );
+
+        if (triggerCount != 1) {
+            errors.add("Workflow must contain exactly one trigger node");
+        }
+
+        //6: VALIDATE REQUIRED CONFIGS
+        for (JsonNode node : nodes) {
+
+            String type = node.get("type").asText();
+            JsonNode config = node.get("config");
+
+            switch (type) {
+                case "AI_GENERATE" -> {
+                    if (config == null
+                            || config.get("prompt") == null) {
+                        errors.add("AI_GENERATE missing config.prompt");
+                    }
+                }
+
+                case "AI_DECISION" -> {
+                    if (config == null || config.get("prompt") == null) {
+                        errors.add("AI_DECISION missing config.prompt");
+                    }
+                }
+
+                case "AI_EXTRACT" -> {
+                    if (config == null || config.get("prompt") == null || config.get("schema") == null) {
+                        errors.add("AI_EXTRACT missing prompt or schema");
+                    }
+                }
+
+                case "AI_CLASSIFY" -> {
+                    if (config == null || config.get("prompt") == null || config.get("labels") == null) {
+                        errors.add("AI_CLASSIFY missing prompt or labels");
+                    }
+                }
+
+                case "RULE" -> {
+                    if (config == null || config.get("expression") == null) {
+                        errors.add("RULE missing expression"
+                        );
+                    }
+                }
+
+                case "WAIT" -> {
+                    if (config == null || config.get("duration") == null) {
+                        errors.add("WAIT missing duration");
+                    }
+                }
+
+                case "HTTP_ACTION" -> {
+                    if (config == null || config.get("method") == null || config.get("url") == null) {
+                        errors.add("HTTP_ACTION missing method or url");
+                    }
+                }
+            }
         }
 
         //6:VALIDATE AI_DECISION EDGES
@@ -123,9 +194,7 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
 
                 // Must have exactly 2 outgoing edges [one for true, and one for false]
                 if (outgoing.size() != 2) {
-                    errors.add(
-                            "AI_DECISION node must have exactly 2 outgoing edges"
-                    );
+                    errors.add("AI_DECISION node must have exactly 2 outgoing edges");
                 }
 
                 // Validate conditions
@@ -134,10 +203,9 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                 for (JsonNode edge : outgoing) {
                     JsonNode conditionNode = edge.get("condition");
 
-                    if (conditionNode == null) {
-                        errors.add(
-                                "Decision edge missing condition"
-                        );
+                    if (conditionNode == null || conditionNode.isNull()) {
+                        errors.add("Decision edge missing condition");
+                        continue;
                     }
 
                     conditions.add(conditionNode.asText());
