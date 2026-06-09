@@ -59,4 +59,19 @@ public class GlobalExceptionHandler {
                         "message", message
                 ));
     }
+
+    @ExceptionHandler(WorkflowValidationException.class)
+    public ResponseEntity<com.priyansu.workflow.exception.ErrorResponse> handleWorkflowValidation(
+            WorkflowValidationException ex
+    ) {
+
+        return ResponseEntity.badRequest()
+                .body(
+                        new ErrorResponse(
+                                ex.getMessage(),
+                                LocalDateTime.now(),
+                                400
+                        )
+                );
+    }
 }

@@ -7,10 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -122,6 +119,57 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             errors.add("Workflow must contain exactly one trigger node");
         }
 
+        //5.1 : Reachability Validation (No Orphan Nodes)
+        //Step1: Find Trigger ID
+        String triggerId = null;
+
+        for (JsonNode node : nodes) {
+
+            String type = node.get("type").asText();
+
+            if ("TRIGGER".equals(type) || "WEBHOOK_TRIGGER".equals(type)) {
+
+                triggerId = node.get("id").asText();
+                break;
+            }
+        }
+       // Step 2 — DFS/BFS Setup
+        Set<String> visited = new HashSet<>();
+
+        Queue<String> queue = new LinkedList<>();
+
+        if (triggerId != null) {
+            queue.add(triggerId);
+            visited.add(triggerId);
+        }
+        //Step 3: Traverse Graph
+        while (!queue.isEmpty()) {
+
+            String current = queue.poll();
+
+            for (JsonNode edge : edges) {
+                String from = edge.get("from").asText();
+                String to = edge.get("to").asText();
+
+                if (from.equals(current) && !visited.contains(to)) {
+                    visited.add(to);
+                    queue.add(to);
+                }
+            }
+        }
+        //Step 4: Check all Nodes
+        for (JsonNode node : nodes) {
+
+            String nodeId = node.get("id").asText();
+
+            if (!visited.contains(nodeId)) {
+                errors.add("Unreachable node: " + nodeId);
+            }
+        }
+
+
+
+
         //6: VALIDATE REQUIRED CONFIGS
         for (JsonNode node : nodes) {
 
@@ -151,6 +199,12 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                 case "AI_CLASSIFY" -> {
                     if (config == null || config.get("prompt") == null || config.get("labels") == null) {
                         errors.add("AI_CLASSIFY missing prompt or labels");
+                    }
+                }
+                case "ACTION" -> {
+                    if (config == null || config.get("actionType") == null) {
+
+                        errors.add("ACTION missing actionType");
                     }
                 }
 
