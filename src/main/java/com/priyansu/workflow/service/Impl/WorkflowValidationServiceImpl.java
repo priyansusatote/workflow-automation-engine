@@ -277,7 +277,85 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
 
             }
         }
+        //Cycle Detection Check
+
+        //s1 : Build Adjacency List
+        Map<String, List<String>> graph = new HashMap<>();
+
+        for (String nodeId : nodeIds) {
+            graph.put(nodeId, new ArrayList<>());
+        }
+
+        for (JsonNode edge : edges) {
+            String from = edge.get("from").asText();
+            String to = edge.get("to").asText();
+
+            graph.get(from).add(to);
+        }
+
+        //S2 : DFS Sets
+        Set<String> Visited2 = new HashSet<>();
+        Set<String> recursionStack = new HashSet<>();
+
+        //S3: Run DFS From Every Node
+        for (String nodeId : nodeIds) {
+            if (hasCycle(
+                    nodeId,
+                    graph,
+                    Visited2,
+                    recursionStack
+            )) {
+                errors.add("Workflow contains cycle involving node: " + nodeId);
+                break;
+            }
+        }
+
 
         return errors;
     }
+
+
+
+
+
+    //Helper
+    private boolean hasCycle(
+            String node,
+            Map<String, List<String>> graph,
+            Set<String> visited,
+            Set<String> recursionStack
+    ) {
+
+        if (recursionStack.contains(node)) { //If current node is already in current DFS path: found Cycle
+            return true;
+        }
+
+        if (visited.contains(node)) { //We already checked this node earlier and know it's safe. no need to explore Again
+            return false;
+        }
+
+        visited.add(node);
+
+        recursionStack.add(node);
+
+        for (String neighbor : graph.get(node)) {
+
+            if (hasCycle(
+                    neighbor,
+                    graph,
+                    visited,
+                    recursionStack
+            )) {
+                return true;
+            }
+        }
+
+        recursionStack.remove(node);
+
+        return false;
+    }
+
 }
+
+
+
