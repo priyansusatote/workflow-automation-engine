@@ -1,5 +1,6 @@
 package com.priyansu.workflow.controller;
 
+import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 import com.priyansu.workflow.execution.AsyncWorkflowExecutor;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,12 @@ public class WorkflowExecutionController {
         executionService.resumeExecution(id);
 
         return "Execution resumed";
+    }
+
+
+    @GetMapping("/executions/{executionId}")
+    public WorkflowExecutionResponse getExecution(@PathVariable UUID executionId) {
+        return executionService.getExecution(executionId);
     }
 
 }

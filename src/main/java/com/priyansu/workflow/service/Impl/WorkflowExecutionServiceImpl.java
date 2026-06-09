@@ -2,6 +2,7 @@ package com.priyansu.workflow.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 import com.priyansu.workflow.entity.TaskExecution;
 import com.priyansu.workflow.entity.WorkflowDefinition;
 import com.priyansu.workflow.entity.WorkflowExecution;
@@ -510,6 +511,24 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         throw new WorkflowValidationException(
                 "Unsupported WAIT duration: "
                         + duration
+        );
+    }
+
+
+    //Get Execution Details
+    @Override
+    public WorkflowExecutionResponse getExecution(UUID executionId) {
+
+        WorkflowExecution execution = executionRepository.findById(executionId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
+
+        return new WorkflowExecutionResponse(
+                execution.getId(),
+                execution.getWorkflowId(),
+                execution.getStatus().name(),
+                execution.getErrorMessage(),
+                execution.getCreatedAt(),
+                execution.getUpdatedAt()
         );
     }
 

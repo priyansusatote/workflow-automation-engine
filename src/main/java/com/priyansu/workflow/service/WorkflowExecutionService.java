@@ -1,5 +1,7 @@
 package com.priyansu.workflow.service;
 
+import com.priyansu.workflow.dto.WorkflowExecutionResponse;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -14,4 +16,7 @@ public interface WorkflowExecutionService {
     void executeWorkflowFromKafka(UUID uuid, UUID uuid1, Map<String, Object> input);
 
     void resumeExecution(UUID id);
+
+    //GET Execution Details
+    WorkflowExecutionResponse getExecution(UUID executionId);
 }
