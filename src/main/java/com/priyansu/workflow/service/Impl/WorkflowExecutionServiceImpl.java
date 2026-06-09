@@ -2,6 +2,7 @@ package com.priyansu.workflow.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.priyansu.workflow.dto.TaskExecutionResponse;
 import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 import com.priyansu.workflow.entity.TaskExecution;
 import com.priyansu.workflow.entity.WorkflowDefinition;
@@ -530,6 +531,28 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 execution.getCreatedAt(),
                 execution.getUpdatedAt()
         );
+    }
+
+    //GET Execution Tasks
+    @Override
+    public List<TaskExecutionResponse> getExecutionTasks(UUID executionId) {
+
+        List<TaskExecution> tasks =
+                taskExecutionRepository
+                        .findByWorkflowExecutionIdOrderByCreatedAt(executionId);
+
+        return tasks.stream()
+                .map(task ->
+                        new TaskExecutionResponse(
+                                task.getNodeId(),
+                                task.getNodeType(),
+                                task.getStatus().name(),
+                                task.getLogMessage(),
+                                task.getOutputData(),
+                                task.getCreatedAt()
+                        )
+                )
+                .toList();
     }
 
 }

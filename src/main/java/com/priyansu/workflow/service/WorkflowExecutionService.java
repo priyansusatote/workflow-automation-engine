@@ -1,7 +1,9 @@
 package com.priyansu.workflow.service;
 
+import com.priyansu.workflow.dto.TaskExecutionResponse;
 import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,4 +21,6 @@ public interface WorkflowExecutionService {
 
     //GET Execution Details
     WorkflowExecutionResponse getExecution(UUID executionId);
+
+    List<TaskExecutionResponse> getExecutionTasks(UUID executionId);
 }

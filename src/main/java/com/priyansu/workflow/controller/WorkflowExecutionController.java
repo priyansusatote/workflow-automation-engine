@@ -1,5 +1,6 @@
 package com.priyansu.workflow.controller;
 
+import com.priyansu.workflow.dto.TaskExecutionResponse;
 import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 import com.priyansu.workflow.execution.AsyncWorkflowExecutor;
 import com.priyansu.workflow.service.WorkflowExecutionService;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,7 +50,14 @@ public class WorkflowExecutionController {
 
     @GetMapping("/executions/{executionId}")
     public WorkflowExecutionResponse getExecution(@PathVariable UUID executionId) {
+
         return executionService.getExecution(executionId);
+    }
+
+    @GetMapping("/executions/{executionId}/tasks")
+    public List<TaskExecutionResponse> getExecutionTasks(@PathVariable UUID executionId) {
+
+        return executionService.getExecutionTasks(executionId);
     }
 
 }
