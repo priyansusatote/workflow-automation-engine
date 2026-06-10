@@ -34,4 +34,18 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
             ExecutionStatus status,
             Pageable pageable
     );
+
+
+    //Find all workflow executions whose workflowId exists in the given list.
+ Page<WorkflowExecution> findByWorkflowIdIn(
+         List<UUID> workflowIds,
+         Pageable pageable
+ );
+
+ //Find all executions:  whose workflowId is in the list AND whose status matches
+ Page<WorkflowExecution> findByWorkflowIdInAndStatus(
+         List<UUID> workflowIds,
+         ExecutionStatus status,
+         Pageable pageable
+ );
 }

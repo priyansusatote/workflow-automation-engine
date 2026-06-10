@@ -19,6 +19,9 @@ import com.priyansu.workflow.executor.TaskExecutor;
 import com.priyansu.workflow.repository.TaskExecutionRepository;
 import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
 import com.priyansu.workflow.repository.WorkflowExecutionRepository;
+import com.priyansu.workflow.repository.WorkflowRepository;
+import com.priyansu.workflow.security.SecurityUtils;
+import com.priyansu.workflow.service.AuthorizationService;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +47,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final WorkflowExecutionRepository executionRepository;
     private final TaskExecutionRepository taskExecutionRepository;
     private final WorkflowExecutionProducer producer;
+    private final AuthorizationService authorizationService;
+    private final WorkflowRepository workflowRepository;
 
 
     // "ExecutorService with a fixed thread pool is used to control concurrency, reuse threads, and prevent resource exhaustion caused by creating too many threads manually."
@@ -310,6 +315,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     @Override
     public UUID triggerWorkflow(UUID workflowId, Map<String, Object> input) {
 
+        //Check Ownership
+        authorizationService.validateWorkflowOwnership(workflowId);
+
         WorkflowExecution execution = createExecution(workflowId);
 
         WorkflowExecutionEvent event = new WorkflowExecutionEvent(
@@ -325,6 +333,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
 
     public void resumeExecution(UUID executionId) {
+
+        //check Ownership
+        authorizationService.validateExecutionOwnership(executionId);
 
         //  STEP 1: FETCH EXECUTION RECORD [Get existing workflow execution (must exist to resume)
         WorkflowExecution execution = executionRepository
@@ -523,6 +534,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     @Override
     public WorkflowExecutionResponse getExecution(UUID executionId) {
 
+        //check Ownership
+        authorizationService.validateExecutionOwnership(executionId);
+
         WorkflowExecution execution = executionRepository.findById(executionId)
                         .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
 
@@ -539,6 +553,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     //GET Execution Tasks
     @Override
     public List<TaskExecutionResponse> getExecutionTasks(UUID executionId) {
+
+        //Check Ownership
+        authorizationService.validateExecutionOwnership(executionId);
+
 
         List<TaskExecution> tasks =
                 taskExecutionRepository
@@ -559,40 +577,66 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
 
+    //returns only your executions.
     @Override
     public Page<ExecutionSummaryResponse> getExecutions(
             UUID workflowId,
             ExecutionStatus status,
             Pageable pageable
     ) {
+        log.info(
+                "workflowId={}, status={}",
+                workflowId,
+                status
+        );
+        UUID currentUserId = SecurityUtils.getCurrentUser().userId();
+
+        List<UUID> workflowIds = workflowRepository.findWorkflowIdsByUserId(currentUserId);
+
+
+        //response Acc to Request with Ownership Validation check
 
         Page<WorkflowExecution> executions;
 
-        if (workflowId != null && status != null) {
+        if (workflowId != null) {
 
-            executions = executionRepository.findByWorkflowIdAndStatus(
-                            workflowId,
-                            status,
-                            pageable
-                    );
+            authorizationService.validateWorkflowOwnership(workflowId);
 
-        } else if (workflowId != null) {
+            if (status != null) {
+                executions = executionRepository
+                                .findByWorkflowIdAndStatus(
+                                        workflowId,
+                                        status,
+                                        pageable
+                                );
 
-            executions = executionRepository.findByWorkflowId(
-                            workflowId,
-                            pageable
-                    );
-
-        } else if (status != null) {
-
-            executions = executionRepository.findByStatus(
-                            status,
-                            pageable
-                    );
+            } else {
+                executions = executionRepository
+                                .findByWorkflowId(
+                                        workflowId,
+                                        pageable
+                                );
+            }
 
         } else {
 
-            executions = executionRepository.findAll(pageable);
+            if (status != null) {
+                executions = executionRepository
+                                .findByWorkflowIdInAndStatus(
+                                        workflowIds,
+                                        status,
+                                        pageable
+                                );
+
+            } else {
+
+                executions =
+                        executionRepository
+                                .findByWorkflowIdIn(
+                                        workflowIds,
+                                        pageable
+                                );
+            }
         }
 
         return executions.map(

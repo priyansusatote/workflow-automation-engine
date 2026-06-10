@@ -2,6 +2,7 @@ package com.priyansu.workflow.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,23 @@ public class GlobalExceptionHandler {
                 "status", 409,
                 "message", ex.getMessage()
         );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException ex
+    ) {
+
+        ErrorResponse error = new ErrorResponse(
+                ex.getMessage(),
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value()
+
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(error);
     }
 
     @ExceptionHandler(Exception.class)

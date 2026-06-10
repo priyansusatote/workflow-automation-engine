@@ -8,6 +8,7 @@ import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.exception.WorkflowValidationException;
 import com.priyansu.workflow.repository.WorkflowDefinitionRepository;
 import com.priyansu.workflow.repository.WorkflowRepository;
+import com.priyansu.workflow.service.AuthorizationService;
 import com.priyansu.workflow.service.WorkflowDefinitionService;
 import com.priyansu.workflow.service.WorkflowValidationService;
 import jakarta.transaction.Transactional;
@@ -28,11 +29,16 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
     private final WorkflowRepository workflowRepository;
     private final ObjectMapper objectMapper;
     private final WorkflowValidationService workflowValidationService;
+    private final AuthorizationService authorizationService;
 
 
     @Override
     @Transactional
     public void saveDefinition(UUID workflowId, WorkflowDefinitionRequest request) {
+
+        //check Ownership
+        authorizationService.validateWorkflowOwnership(workflowId);
+
         //check workflow exists
         workflowRepository.findById(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workflow Not Found"));
@@ -87,6 +93,10 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
 
     @Override
     public String getDefinition(UUID workflowId) {
+
+        //check Ownership
+        authorizationService.validateWorkflowOwnership(workflowId);
+
         WorkflowDefinition definition = definitionRepository
                 .findTopByWorkflowIdOrderByVersionDesc(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Definition not found"));
