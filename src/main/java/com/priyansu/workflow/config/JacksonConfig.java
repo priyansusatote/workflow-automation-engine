@@ -1,14 +1,19 @@
 package com.priyansu.workflow.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class JacksonConfig {  //explicitly telling springBoot :“Use this ObjectMapper”
+public class JacksonConfig {
+
 
     @Bean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+
+        return JsonMapper.builder()
+                .findAndAddModules()
+                .build();
     }
 }

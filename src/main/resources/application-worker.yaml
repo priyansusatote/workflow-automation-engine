@@ -1,4 +1,9 @@
+
+
 spring:
+  main:
+    web-application-type: none
+
   kafka:
     bootstrap-servers: localhost:29092
 
@@ -11,5 +16,3 @@ spring:
 server:
   port: 0
 
-  main:
-    web-application-type: none

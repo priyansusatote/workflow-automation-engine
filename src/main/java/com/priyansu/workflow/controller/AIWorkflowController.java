@@ -1,6 +1,8 @@
 package com.priyansu.workflow.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.priyansu.workflow.dto.ai.GenerateWorkflowRequest;
+import com.priyansu.workflow.dto.ai.GeneratedWorkflowResponse;
 import com.priyansu.workflow.dto.ai.WorkflowGenerationRequest;
 import com.priyansu.workflow.service.ai.WorkflowGenerationService;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +31,14 @@ public class AIWorkflowController {
                 );
 
         return ResponseEntity.ok(workflow);
+    }
+
+    @PostMapping("/generate-and-save")
+    public GeneratedWorkflowResponse generateAndSave(@RequestBody GenerateWorkflowRequest request) {
+
+        return workflowGenerationService.generateAndSaveWorkflow(
+                        request.workflowName(),
+                        request.prompt()
+                );
     }
 }
