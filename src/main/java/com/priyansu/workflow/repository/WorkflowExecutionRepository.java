@@ -2,6 +2,8 @@ package com.priyansu.workflow.repository;
 
 import com.priyansu.workflow.entity.WorkflowExecution;
 import com.priyansu.workflow.entity.enums.ExecutionStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -12,4 +14,24 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
 
    // Finds all workflow executions that are in WAITING status and whose resume time has already passed.
     List<WorkflowExecution> findByStatusAndResumeAtBefore(ExecutionStatus status, LocalDateTime now);
+
+    // Execution Monitoring APIs
+
+    Page<WorkflowExecution> findAll(Pageable pageable);
+
+    Page<WorkflowExecution> findByStatus(
+            ExecutionStatus status,
+            Pageable pageable
+    );
+
+    Page<WorkflowExecution> findByWorkflowId(
+            UUID workflowId,
+            Pageable pageable
+    );
+
+    Page<WorkflowExecution> findByWorkflowIdAndStatus(
+            UUID workflowId,
+            ExecutionStatus status,
+            Pageable pageable
+    );
 }

@@ -1,10 +1,16 @@
 package com.priyansu.workflow.controller;
 
+import com.priyansu.workflow.dto.ExecutionSummaryResponse;
 import com.priyansu.workflow.dto.TaskExecutionResponse;
 import com.priyansu.workflow.dto.WorkflowExecutionResponse;
+import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import com.priyansu.workflow.execution.AsyncWorkflowExecutor;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +44,7 @@ public class WorkflowExecutionController {
                 "executionId", executionId
         ));
     }
+
     @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#workflowId)")
     @PostMapping("/executions/{id}/resume")
     public String resume(@PathVariable UUID id) {
@@ -47,6 +54,7 @@ public class WorkflowExecutionController {
         return "Execution resumed";
     }
 
+    // <- Execution Monitoring APIs ->
 
     @GetMapping("/executions/{executionId}")
     public WorkflowExecutionResponse getExecution(@PathVariable UUID executionId) {
@@ -58,6 +66,30 @@ public class WorkflowExecutionController {
     public List<TaskExecutionResponse> getExecutionTasks(@PathVariable UUID executionId) {
 
         return executionService.getExecutionTasks(executionId);
+    }
+
+    @GetMapping("/executions")
+    public Page<ExecutionSummaryResponse> getExecutions(
+
+            @RequestParam(required = false)
+            UUID workflowId,
+
+            @RequestParam(required = false)
+            ExecutionStatus status,
+
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
+    ) {
+
+        return executionService.getExecutions(
+                workflowId,
+                status,
+                pageable
+        );
     }
 
 }

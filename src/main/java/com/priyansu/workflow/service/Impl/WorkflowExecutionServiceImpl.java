@@ -2,6 +2,7 @@ package com.priyansu.workflow.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.priyansu.workflow.dto.ExecutionSummaryResponse;
 import com.priyansu.workflow.dto.TaskExecutionResponse;
 import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 import com.priyansu.workflow.entity.TaskExecution;
@@ -21,6 +22,8 @@ import com.priyansu.workflow.repository.WorkflowExecutionRepository;
 import com.priyansu.workflow.service.WorkflowExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -555,4 +558,52 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 .toList();
     }
 
+
+    @Override
+    public Page<ExecutionSummaryResponse> getExecutions(
+            UUID workflowId,
+            ExecutionStatus status,
+            Pageable pageable
+    ) {
+
+        Page<WorkflowExecution> executions;
+
+        if (workflowId != null && status != null) {
+
+            executions = executionRepository.findByWorkflowIdAndStatus(
+                            workflowId,
+                            status,
+                            pageable
+                    );
+
+        } else if (workflowId != null) {
+
+            executions = executionRepository.findByWorkflowId(
+                            workflowId,
+                            pageable
+                    );
+
+        } else if (status != null) {
+
+            executions = executionRepository.findByStatus(
+                            status,
+                            pageable
+                    );
+
+        } else {
+
+            executions = executionRepository.findAll(pageable);
+        }
+
+        return executions.map(
+                execution ->
+                        new ExecutionSummaryResponse(
+                                execution.getId(),
+                                execution.getWorkflowId(),
+                                execution.getStatus(),
+                                execution.getCreatedAt(),
+                                execution.getUpdatedAt()
+                        )
+        );
+    }
 }
