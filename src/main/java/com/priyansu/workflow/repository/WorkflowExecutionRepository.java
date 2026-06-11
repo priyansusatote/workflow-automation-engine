@@ -5,11 +5,13 @@ import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Repository
 public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecution, UUID> {
 
     // Finds all workflow executions that are in WAITING status and whose resume time has already passed.
@@ -57,6 +59,13 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
 
     long countByWorkflowIdInAndStatus(
             List<UUID> workflowIds,
+            ExecutionStatus status
+    );
+
+    long countByWorkflowId(UUID workflowId);
+
+    long countByWorkflowIdAndStatus(
+            UUID workflowId,
             ExecutionStatus status
     );
 

@@ -6,10 +6,12 @@ import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import com.priyansu.workflow.entity.enums.WorkflowStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.UUID;
 
+@Repository
 public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
 
     boolean existsByNameAndUserId(String name, UUID userId);

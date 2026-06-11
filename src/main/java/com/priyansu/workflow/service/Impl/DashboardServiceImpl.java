@@ -1,6 +1,8 @@
 package com.priyansu.workflow.service.Impl;
 
 import com.priyansu.workflow.dto.DashboardResponse;
+import com.priyansu.workflow.dto.WorkflowStatsResponse;
+import com.priyansu.workflow.entity.Workflow;
 import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import com.priyansu.workflow.entity.enums.WorkflowStatus;
 import com.priyansu.workflow.repository.WorkflowExecutionRepository;
@@ -11,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -105,5 +109,55 @@ public class DashboardServiceImpl implements DashboardService {
                 waitingExecutions,
                 Math.round(successRate * 100.0) / 100.0
         );
+    }
+    @Override
+    public List<WorkflowStatsResponse> getWorkflowStats() {
+
+        UUID currentUserId = SecurityUtils.getCurrentUser().userId();
+
+        List<Workflow> workflows = workflowRepository.findByUserId(currentUserId);
+
+        List<WorkflowStatsResponse> response = new ArrayList<>();
+
+        for (Workflow workflow : workflows) {
+
+            long total = executionRepository.countByWorkflowId(
+                            workflow.getId()
+                    );
+
+            long success = executionRepository.countByWorkflowIdAndStatus(
+                            workflow.getId(),
+                            ExecutionStatus.SUCCESS
+                    );
+
+            long failed = executionRepository.countByWorkflowIdAndStatus(
+                            workflow.getId(),
+                            ExecutionStatus.FAILED
+                    );
+
+            double successRate = total == 0
+                            ? 0
+                            : (success * 100.0) / total;
+
+            response.add(
+                    new WorkflowStatsResponse(
+                            workflow.getId(),
+                            workflow.getName(),
+                            total,
+                            success,
+                            failed,
+                            Math.round(successRate * 100.0) / 100.0
+                    )
+            );
+        }
+
+        //Sort By most-used workflow
+        response.sort(
+                Comparator.comparingLong(
+                        WorkflowStatsResponse::totalExecutions
+                ).reversed()
+        );
+
+        return response;
     }
 }
