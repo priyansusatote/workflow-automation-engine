@@ -2,6 +2,8 @@ package com.priyansu.workflow.repository;
 
 import com.priyansu.workflow.dto.WorkflowResponse;
 import com.priyansu.workflow.entity.Workflow;
+import com.priyansu.workflow.entity.enums.ExecutionStatus;
+import com.priyansu.workflow.entity.enums.WorkflowStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -22,4 +24,14 @@ public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
                 where w.userId = :userId
             """)
     List<UUID> findWorkflowIdsByUserId(UUID userId);
+
+    //Dashboard
+
+    long countByUserId(UUID userId);
+
+    long countByUserIdAndStatus(
+            UUID userId,
+            WorkflowStatus status
+    );
+
 }

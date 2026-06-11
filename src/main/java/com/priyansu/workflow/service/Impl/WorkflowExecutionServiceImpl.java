@@ -584,11 +584,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             ExecutionStatus status,
             Pageable pageable
     ) {
-        log.info(
-                "workflowId={}, status={}",
-                workflowId,
-                status
-        );
+
         UUID currentUserId = SecurityUtils.getCurrentUser().userId();
 
         List<UUID> workflowIds = workflowRepository.findWorkflowIdsByUserId(currentUserId);
