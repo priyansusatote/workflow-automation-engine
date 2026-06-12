@@ -5,6 +5,7 @@ import com.priyansu.workflow.entity.WorkflowWebhook;
 import com.priyansu.workflow.repository.WorkflowWebhookRepository;
 import com.priyansu.workflow.service.WorkflowWebhookService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,7 @@ public class WorkflowWebhookController {
     private final WorkflowWebhookRepository workflowWebhookRepository;
     private final WorkflowWebhookService workflowWebhookService;
 
+    @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#workflowId)")
     @PostMapping("/{workflowId}/webhook")
     public WorkflowWebhookResponse createWebhook(
             @PathVariable UUID workflowId

@@ -12,6 +12,7 @@ import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import com.priyansu.workflow.event.WorkflowExecutionEvent;
 import com.priyansu.workflow.event.WorkflowExecutionProducer;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
+import com.priyansu.workflow.exception.RetryableExecutionException;
 import com.priyansu.workflow.exception.WorkflowValidationException;
 import com.priyansu.workflow.execution.WorkflowContext;
 import com.priyansu.workflow.executor.ExecutorFactory;
@@ -49,6 +50,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final WorkflowExecutionProducer producer;
     private final AuthorizationService authorizationService;
     private final WorkflowRepository workflowRepository;
+
+    private static final int MAX_RETRIES = 3;
 
 
     // "ExecutorService with a fixed thread pool is used to control concurrency, reuse threads, and prevent resource exhaustion caused by creating too many threads manually."
@@ -207,7 +210,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
             //  Strategy Pattern used here (Execute current node)
             TaskExecutor executor = executorFactory.getExecutor(type); //TRIGGER, ACTION, WAIT etc...
-            executor.execute(currentNode, context);
+            executeNodeWithRetry(  // .execute() method used inside this method
+                    executor,
+                    currentNode,
+                    context,
+                    nodeId,
+                    type
+            );
 
             // WAIT nodes pause workflow execution
             if ("WAIT".equals(type)) {
@@ -534,7 +543,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     @Override
     public WorkflowExecutionResponse getExecution(UUID executionId) {
 
-        //check Ownership
+        //check Ownership [we can use RBAC PreAuthorize also instead of this)
         authorizationService.validateExecutionOwnership(executionId);
 
         WorkflowExecution execution = executionRepository.findById(executionId)
@@ -645,5 +654,83 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                                 execution.getUpdatedAt()
                         )
         );
+    }
+
+    //retry execute (resilience4J Node Level)
+    private void executeNodeWithRetry(
+            TaskExecutor executor,
+            JsonNode currentNode,
+            WorkflowContext context,
+            String nodeId,
+            String type
+    ) {
+
+        Set<String> retryableTypes = Set.of(
+                "HTTP_ACTION",
+                "AI_EXTRACT",
+                "AI_GENERATE",
+                "AI_CLASSIFY"
+        );
+
+        if (!retryableTypes.contains(type)) {
+            executor.execute(currentNode, context);
+            return;
+        }
+
+        for (int attempt = 1;
+             attempt <= MAX_RETRIES;
+             attempt++) {
+
+            try {
+
+                executor.execute(
+                        currentNode,
+                        context
+                );
+
+                return;
+
+            } catch (RetryableExecutionException ex) {
+
+                log.warn(
+                        "Retry attempt {}/{} for nodeId={} type={} reason={}",
+                        attempt,
+                        MAX_RETRIES,
+                        nodeId,
+                        type,
+                        ex.getMessage()
+                );
+
+                if (attempt == MAX_RETRIES) {
+
+                    throw new NonRetryableWorkflowException(
+                            "Node retries exhausted: "
+                                    + nodeId,
+                            ex
+                    );
+                }
+
+                try {
+                    Thread.sleep(1000L * attempt);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    public class NonRetryableWorkflowException
+            extends RuntimeException {
+
+        public NonRetryableWorkflowException(String message) {
+            super(message);
+        }
+
+        public NonRetryableWorkflowException(
+                String message,
+                Throwable cause
+        ) {
+            super(message, cause);
+        }
     }
 }

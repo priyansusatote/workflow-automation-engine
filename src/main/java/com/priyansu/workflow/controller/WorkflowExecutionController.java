@@ -45,7 +45,7 @@ public class WorkflowExecutionController {
         ));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#workflowId)")
+    @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#id)")
     @PostMapping("/executions/{id}/resume")
     public String resume(@PathVariable UUID id) {
 

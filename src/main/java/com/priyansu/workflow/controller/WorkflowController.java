@@ -41,7 +41,7 @@ public class WorkflowController {
         return workflowService.getWorkflowById(id);
     }
 
-    @PreAuthorize("@workflowSecurity.isOwner(#workflowId)")
+    @PreAuthorize("@workflowSecurity.isOwner(#id)")
     @PutMapping("/{id}")
     public WorkflowResponse update(
             @PathVariable UUID id,
@@ -49,7 +49,7 @@ public class WorkflowController {
         return workflowService.updateWorkflow(id, request);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#workflowId)")
+    @PreAuthorize("hasRole('ADMIN') or @workflowSecurity.isOwner(#id)")
     @DeleteMapping("/{id}")
     public String delete(@PathVariable UUID id){
         workflowService.deleteWorkflow(id);

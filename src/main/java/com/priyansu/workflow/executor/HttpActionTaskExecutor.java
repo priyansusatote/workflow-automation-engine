@@ -1,5 +1,8 @@
 package com.priyansu.workflow.executor;
 
+import com.priyansu.workflow.exception.RetryableExecutionException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,12 +73,27 @@ public class HttpActionTaskExecutor implements TaskExecutor {
                 );
 
         //6: Execute
-        ResponseEntity<String> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.POST,
-                        request,
-                        String.class
-                );
+        ResponseEntity<String> response;
+
+        try {
+            response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    String.class );
+
+        } catch (HttpServerErrorException ex) {
+            throw new RetryableExecutionException(
+                    "Temporary server error: "
+                            + ex.getStatusCode(),
+                    ex);
+
+        } catch (ResourceAccessException ex) {
+            throw new RetryableExecutionException(
+                    "Connection/timeout error",
+                    ex
+            );
+        }
 
         //7: Store Result
         context.put(node.get("id").asText() + "_result",
