@@ -7,7 +7,6 @@ import com.priyansu.workflow.exception.DuplicateResourceException;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.mapper.WorkflowMapper;
 import com.priyansu.workflow.repository.WorkflowRepository;
-import com.priyansu.workflow.security.JwtUserPrincipal;
 import com.priyansu.workflow.security.SecurityUtils;
 import com.priyansu.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;

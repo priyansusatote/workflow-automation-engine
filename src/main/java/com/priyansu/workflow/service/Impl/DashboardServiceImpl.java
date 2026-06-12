@@ -10,6 +10,8 @@ import com.priyansu.workflow.repository.WorkflowRepository;
 import com.priyansu.workflow.security.SecurityUtils;
 import com.priyansu.workflow.service.DashboardService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +23,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class DashboardServiceImpl implements DashboardService {
 
     private final WorkflowRepository workflowRepository;
-
     private final WorkflowExecutionRepository executionRepository;
 
     @Override
@@ -110,6 +112,8 @@ public class DashboardServiceImpl implements DashboardService {
                 Math.round(successRate * 100.0) / 100.0
         );
     }
+
+
     @Override
     public List<WorkflowStatsResponse> getWorkflowStats() {
 

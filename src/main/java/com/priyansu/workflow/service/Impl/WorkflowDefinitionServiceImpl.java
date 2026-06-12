@@ -14,6 +14,8 @@ import com.priyansu.workflow.service.WorkflowValidationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 
@@ -34,6 +36,7 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
 
     @Override
     @Transactional
+    @CacheEvict(value = "workflows", key = "#id")  //Evict Cache
     public void saveDefinition(UUID workflowId, WorkflowDefinitionRequest request) {
 
         //check Ownership
@@ -92,6 +95,7 @@ public class WorkflowDefinitionServiceImpl implements WorkflowDefinitionService 
     }
 
     @Override
+    @Cacheable(value = "definitions", key = "#workflowId")
     public String getDefinition(UUID workflowId) {
 
         //check Ownership
