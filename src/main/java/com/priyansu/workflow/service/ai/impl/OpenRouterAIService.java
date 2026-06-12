@@ -1,5 +1,8 @@
 package com.priyansu.workflow.service.ai.impl;
 
+import com.priyansu.workflow.exception.AIExecutionException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import com.priyansu.workflow.dto.ai.AIRequest;
 import com.priyansu.workflow.dto.ai.AIResponse;
 import com.priyansu.workflow.dto.ai.openrouter.OpenRouterMessage;
@@ -39,6 +42,11 @@ public class OpenRouterAIService implements  AIService { //This class will: call
 
 
     @Override
+    @Retry(name = "openRouter")  //resiliance4J
+    @CircuitBreaker(
+            name = "openRouter",
+            fallbackMethod = "fallbackGenerate" //write fallback method of this name
+    )
     public AIResponse generate(AIRequest request) {
 
         //Start Timer
@@ -114,6 +122,22 @@ public class OpenRouterAIService implements  AIService { //This class will: call
                         : null,
 
                 latency
+        );
+    }
+
+    //Fallback Method [if after 3-Retries it fails -> fallback]
+    private AIResponse fallbackGenerate(
+            AIRequest request,
+            Exception ex
+    ) {
+
+        log.error(
+                "OpenRouter unavailable after retries",
+                ex
+        );
+
+        throw new AIExecutionException(
+                "AI service temporarily unavailable"
         );
     }
 }
