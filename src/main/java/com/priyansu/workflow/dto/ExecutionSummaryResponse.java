@@ -11,6 +11,8 @@ public record ExecutionSummaryResponse(
 
         UUID workflowId,
 
+        String workflowName,
+
         ExecutionStatus status,
 
         LocalDateTime createdAt,

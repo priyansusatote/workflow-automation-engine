@@ -6,6 +6,7 @@ import com.priyansu.workflow.dto.ExecutionSummaryResponse;
 import com.priyansu.workflow.dto.TaskExecutionResponse;
 import com.priyansu.workflow.dto.WorkflowExecutionResponse;
 import com.priyansu.workflow.entity.TaskExecution;
+import com.priyansu.workflow.entity.Workflow;
 import com.priyansu.workflow.entity.WorkflowDefinition;
 import com.priyansu.workflow.entity.WorkflowExecution;
 import com.priyansu.workflow.entity.enums.ExecutionStatus;
@@ -644,16 +645,23 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             }
         }
 
-        return executions.map(
-                execution ->
-                        new ExecutionSummaryResponse(
+        return executions.map(execution ->{
+                    String workflowName =
+                            workflowRepository.findById(
+                                            execution.getWorkflowId()
+                                    )
+                                    .map(Workflow::getName)
+                                    .orElse("Unknown Workflow");
+
+                    return new ExecutionSummaryResponse(
                                 execution.getId(),
                                 execution.getWorkflowId(),
+                                workflowName,
                                 execution.getStatus(),
                                 execution.getCreatedAt(),
                                 execution.getUpdatedAt()
-                        )
-        );
+                        );
+        });
     }
 
     //retry execute (resilience4J Node Level)

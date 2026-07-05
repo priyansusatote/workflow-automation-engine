@@ -1,0 +1,384 @@
+@import "tailwindcss";
+
+/* ============================================
+   NEUREX — "OBSIDIAN" DESIGN TOKEN SYSTEM
+   Dark-first, depth-aware, premium SaaS
+   ============================================ */
+
+:root {
+  /* ── Core Palette ── */
+  --neurex-bg-base: hsl(228, 14%, 7%);
+  --neurex-bg-elevated: hsl(228, 14%, 10%);
+  --neurex-bg-overlay: hsl(228, 14%, 13%);
+  --neurex-bg-subtle: hsl(228, 14%, 16%);
+  --neurex-bg-muted: hsl(228, 14%, 20%);
+
+  --neurex-border-default: hsl(228, 10%, 18%);
+  --neurex-border-focus: hsl(228, 10%, 28%);
+  --neurex-border-hover: hsl(228, 10%, 24%);
+
+  /* ── Text Hierarchy ── */
+  --neurex-text-primary: hsl(228, 10%, 93%);
+  --neurex-text-secondary: hsl(228, 8%, 62%);
+  --neurex-text-tertiary: hsl(228, 6%, 42%);
+  --neurex-text-ghost: hsl(228, 4%, 28%);
+
+  /* ── Accent — Electric Violet ── */
+  --neurex-accent: hsl(262, 83%, 64%);
+  --neurex-accent-hover: hsl(262, 83%, 72%);
+  --neurex-accent-active: hsl(262, 83%, 56%);
+  --neurex-accent-subtle: hsl(262, 83%, 64%, 0.12);
+  --neurex-accent-glow: hsl(262, 83%, 64%, 0.25);
+  --neurex-accent-muted: hsl(262, 40%, 40%);
+
+  /* ── Semantic — Execution Status ── */
+  --neurex-success: hsl(152, 69%, 53%);
+  --neurex-success-subtle: hsl(152, 69%, 53%, 0.12);
+  --neurex-error: hsl(0, 84%, 64%);
+  --neurex-error-subtle: hsl(0, 84%, 64%, 0.12);
+  --neurex-warning: hsl(38, 92%, 58%);
+  --neurex-warning-subtle: hsl(38, 92%, 58%, 0.12);
+  --neurex-running: hsl(217, 91%, 60%);
+  --neurex-running-subtle: hsl(217, 91%, 60%, 0.12);
+  --neurex-waiting: hsl(280, 67%, 60%);
+  --neurex-waiting-subtle: hsl(280, 67%, 60%, 0.12);
+
+  /* ── Typography ── */
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+
+  /* ── Spacing (4px grid) ── */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ── Border Radius ── */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (layered depth) ── */
+  --shadow-xs: 0 1px 2px hsl(228, 14%, 0%, 0.2);
+  --shadow-sm: 0 1px 3px hsl(228, 14%, 0%, 0.3), 0 1px 2px hsl(228, 14%, 0%, 0.2);
+  --shadow-md: 0 4px 12px hsl(228, 14%, 0%, 0.4);
+  --shadow-lg: 0 8px 24px hsl(228, 14%, 0%, 0.5);
+  --shadow-xl: 0 12px 40px hsl(228, 14%, 0%, 0.6);
+  --shadow-glow: 0 0 20px var(--neurex-accent-glow);
+  --shadow-glow-sm: 0 0 10px var(--neurex-accent-glow);
+  --shadow-glow-success: 0 0 12px hsl(152, 69%, 53%, 0.2);
+  --shadow-glow-error: 0 0 12px hsl(0, 84%, 64%, 0.2);
+  --shadow-glow-running: 0 0 12px hsl(217, 91%, 60%, 0.2);
+
+  /* ── Transitions ── */
+  --transition-fast: 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-default: 250ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-slow: 350ms cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  /* ── Sidebar ── */
+  --sidebar-width-collapsed: 64px;
+  --sidebar-width-expanded: 240px;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+html {
+  background-color: var(--neurex-bg-base);
+  color: var(--neurex-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--neurex-bg-base);
+  color: var(--neurex-text-primary);
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neurex-border-default);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neurex-border-focus);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--neurex-accent-subtle);
+  color: var(--neurex-text-primary);
+}
+
+/* ── Focus Ring ── */
+*:focus-visible {
+  outline: 2px solid var(--neurex-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Text utilities */
+.text-primary { color: var(--neurex-text-primary); }
+.text-secondary { color: var(--neurex-text-secondary); }
+.text-tertiary { color: var(--neurex-text-tertiary); }
+.text-ghost { color: var(--neurex-text-ghost); }
+
+/* Monospace — for IDs, timestamps, execution data */
+.font-mono {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  letter-spacing: -0.02em;
+}
+
+/* Surface utilities */
+.surface-base { background-color: var(--neurex-bg-base); }
+.surface-elevated { background-color: var(--neurex-bg-elevated); }
+.surface-overlay { background-color: var(--neurex-bg-overlay); }
+
+/* Glow effect */
+.glow-accent {
+  box-shadow: var(--shadow-glow);
+}
+
+.glow-accent-sm {
+  box-shadow: var(--shadow-glow-sm);
+}
+
+/* Status glow animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--neurex-accent-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--neurex-bg-elevated) 0%,
+    var(--neurex-bg-overlay) 50%,
+    var(--neurex-bg-elevated) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* ============================================
+   COMPONENT BASE STYLES
+   ============================================ */
+
+/* Card — Elevated surface with subtle depth */
+.neurex-card {
+  background-color: var(--neurex-bg-elevated);
+  border: 1px solid var(--neurex-border-default);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-default);
+}
+
+.neurex-card:hover {
+  border-color: var(--neurex-border-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Input — With focus glow */
+.neurex-input {
+  background-color: var(--neurex-bg-base);
+  border: 1px solid var(--neurex-border-default);
+  border-radius: var(--radius-md);
+  color: var(--neurex-text-primary);
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.neurex-input::placeholder {
+  color: var(--neurex-text-ghost);
+}
+
+.neurex-input:hover {
+  border-color: var(--neurex-border-hover);
+}
+
+.neurex-input:focus {
+  outline: none;
+  border-color: var(--neurex-accent);
+  box-shadow: 0 0 0 3px var(--neurex-accent-subtle);
+}
+
+/* Button variants */
+.neurex-btn-primary {
+  background: linear-gradient(135deg, var(--neurex-accent), hsl(262, 83%, 56%));
+  color: white;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.neurex-btn-primary:hover {
+  background: linear-gradient(135deg, var(--neurex-accent-hover), var(--neurex-accent));
+  box-shadow: var(--shadow-glow-sm);
+  transform: translateY(-1px);
+}
+
+.neurex-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.neurex-btn-ghost {
+  background: transparent;
+  color: var(--neurex-text-secondary);
+  font-weight: 500;
+  border: 1px solid var(--neurex-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.neurex-btn-ghost:hover {
+  background: var(--neurex-bg-subtle);
+  color: var(--neurex-text-primary);
+  border-color: var(--neurex-border-hover);
+}
+
+.neurex-btn-danger {
+  background: var(--neurex-error-subtle);
+  color: var(--neurex-error);
+  font-weight: 500;
+  border: 1px solid hsl(0, 84%, 64%, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.neurex-btn-danger:hover {
+  background: hsl(0, 84%, 64%, 0.2);
+  box-shadow: var(--shadow-glow-error);
+}
+
+/* Badge */
+.neurex-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.01em;
+}
+
+.neurex-badge-success {
+  background: var(--neurex-success-subtle);
+  color: var(--neurex-success);
+}
+
+.neurex-badge-error {
+  background: var(--neurex-error-subtle);
+  color: var(--neurex-error);
+}
+
+.neurex-badge-warning {
+  background: var(--neurex-warning-subtle);
+  color: var(--neurex-warning);
+}
+
+.neurex-badge-running {
+  background: var(--neurex-running-subtle);
+  color: var(--neurex-running);
+}
+
+.neurex-badge-waiting {
+  background: var(--neurex-waiting-subtle);
+  color: var(--neurex-waiting);
+}
+
+.neurex-badge-neutral {
+  background: var(--neurex-bg-subtle);
+  color: var(--neurex-text-secondary);
+}
+
+/* ── Backdrop blur for overlays ── */
+.backdrop-blur-neurex {
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
