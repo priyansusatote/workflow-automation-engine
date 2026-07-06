@@ -8,6 +8,7 @@ import com.priyansu.workflow.entity.enums.WorkflowStatus;
 import com.priyansu.workflow.repository.WorkflowExecutionRepository;
 import com.priyansu.workflow.repository.WorkflowRepository;
 import com.priyansu.workflow.security.SecurityUtils;
+import com.priyansu.workflow.service.CurrentUserService;
 import com.priyansu.workflow.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,11 +29,12 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final WorkflowRepository workflowRepository;
     private final WorkflowExecutionRepository executionRepository;
+    private final CurrentUserService currentUserService;
 
     @Override
     public DashboardResponse getDashboard() {
 
-        UUID currentUserId = SecurityUtils.getCurrentUser().userId();
+        UUID currentUserId = currentUserService.getCurrentUserId();
 
         List<UUID> workflowIds = workflowRepository.findWorkflowIdsByUserId(currentUserId);
 
@@ -117,7 +119,7 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     public List<WorkflowStatsResponse> getWorkflowStats() {
 
-        UUID currentUserId = SecurityUtils.getCurrentUser().userId();
+        UUID currentUserId = currentUserService.getCurrentUserId();
 
         List<Workflow> workflows = workflowRepository.findByUserId(currentUserId);
 
