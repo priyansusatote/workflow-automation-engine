@@ -17,6 +17,7 @@ import {
   Zap,
   GitBranch,
   Activity,
+  Copy,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,6 +27,7 @@ import {
   useActivateWorkflow,
   useDeactivateWorkflow,
   useExecuteWorkflow,
+  useCreateWorkflow,
 } from "@/hooks/use-workflows";
 import { useWorkflowExecutions } from "@/hooks/use-executions";
 import { formatDistanceToNow } from "@/lib/utils";
@@ -56,6 +58,7 @@ export default function WorkflowDetailPage({
   const activate = useActivateWorkflow();
   const deactivate = useDeactivateWorkflow();
   const execute = useExecuteWorkflow();
+  const createWf = useCreateWorkflow();
   const [showExecuteModal, setShowExecuteModal] = useState(false);
 
   const { error: toastError } = useToast();
@@ -170,6 +173,24 @@ export default function WorkflowDetailPage({
             <GitBranch className="w-4 h-4" />
             Open Builder
           </Link>
+          <button
+            onClick={() => {
+              if (!workflow) return;
+              createWf.mutate(
+                { name: `${workflow.name} (Copy)`, description: workflow.description || "" },
+                { onSuccess: (created) => router.push(`/workflows/${created.id}`) }
+              );
+            }}
+            disabled={createWf.isPending}
+            className="neurex-btn-ghost flex items-center gap-2 text-sm"
+          >
+            {createWf.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Copy className="w-4 h-4" />
+            )}
+            Duplicate
+          </button>
           {workflow.status === "ACTIVE" ? (
             <>
               <button

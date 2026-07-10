@@ -8,6 +8,7 @@ import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.mapper.WorkflowMapper;
 import com.priyansu.workflow.repository.WorkflowRepository;
 import com.priyansu.workflow.security.SecurityUtils;
+import com.priyansu.workflow.service.CurrentUserService;
 import com.priyansu.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,14 +22,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     private final WorkflowRepository workflowRepository;
     private final WorkflowMapper workflowMapper;
-
+    private final CurrentUserService currentUserService;
 
 
 
     @Override
     public WorkflowResponse createWorkflow(WorkflowRequest request) {
 
-        UUID userId = SecurityUtils.getCurrentUser().userId(); // current user
+        UUID userId = currentUserService.getCurrentUserId(); // current user
 
         //check if already exists
         if (workflowRepository.existsByNameAndUserId(request.name(), userId)) {

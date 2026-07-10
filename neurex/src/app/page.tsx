@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { NeurexLogo } from "@/components/ui/neurex-logo";
+import { AnimatedBuilderDemo } from "@/components/landing/animated-builder-demo";
 import { useRef } from "react";
 
 /* ─────────────────────── Hero ─────────────────────── */
@@ -190,156 +191,9 @@ function BuilderPreview() {
           </p>
         </motion.div>
 
-        {/* Mock builder */}
+        {/* Animated Builder Demo */}
         <motion.div style={{ y }}>
-          <div
-            className="relative rounded-2xl overflow-hidden"
-            style={{
-              backgroundColor: "var(--neurex-bg-elevated)",
-              border: "1px solid var(--neurex-border-default)",
-              boxShadow: "0 24px 80px hsl(228, 14%, 0%, 0.5)",
-            }}
-          >
-            {/* Toolbar */}
-            <div
-              className="flex items-center gap-3 px-5 py-3"
-              style={{ borderBottom: "1px solid var(--neurex-border-default)" }}
-            >
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(0, 84%, 64%)" }} />
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(38, 92%, 58%)" }} />
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(152, 69%, 53%)" }} />
-              </div>
-              <span className="text-xs font-mono" style={{ color: "var(--neurex-text-ghost)" }}>
-                workflow-builder.neurex
-              </span>
-            </div>
-            {/* Canvas */}
-            <div className="relative h-80 md:h-96 p-8">
-              {/* Node: Trigger */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="absolute top-8 left-8 md:left-16"
-              >
-                <div
-                  className="px-5 py-3 rounded-xl flex items-center gap-3"
-                  style={{
-                    backgroundColor: "var(--neurex-bg-overlay)",
-                    border: "1px solid var(--neurex-border-default)",
-                    boxShadow: "var(--shadow-md)",
-                  }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: "var(--neurex-success-subtle)" }}
-                  >
-                    <Play className="w-4 h-4" style={{ color: "var(--neurex-success)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--neurex-text-primary)" }}>
-                      Webhook Trigger
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--neurex-text-tertiary)" }}>
-                      POST /api/webhook
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Node: AI Process */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-              >
-                <div
-                  className="px-5 py-3 rounded-xl flex items-center gap-3"
-                  style={{
-                    backgroundColor: "var(--neurex-bg-overlay)",
-                    border: "1px solid hsl(262, 83%, 64%, 0.3)",
-                    boxShadow: "0 0 24px hsl(262, 83%, 64%, 0.1)",
-                  }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: "var(--neurex-accent-subtle)" }}
-                  >
-                    <Bot className="w-4 h-4" style={{ color: "var(--neurex-accent)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--neurex-text-primary)" }}>
-                      AI Classification
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--neurex-text-tertiary)" }}>
-                      Gemini 2.5 Pro
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Node: HTTP Action */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-                className="absolute bottom-8 right-8 md:right-16"
-              >
-                <div
-                  className="px-5 py-3 rounded-xl flex items-center gap-3"
-                  style={{
-                    backgroundColor: "var(--neurex-bg-overlay)",
-                    border: "1px solid var(--neurex-border-default)",
-                    boxShadow: "var(--shadow-md)",
-                  }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: "var(--neurex-running-subtle)" }}
-                  >
-                    <Globe className="w-4 h-4" style={{ color: "var(--neurex-running)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--neurex-text-primary)" }}>
-                      HTTP Action
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--neurex-text-tertiary)" }}>
-                      POST /api/notify
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Animated edges (SVG) */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
-                <motion.line
-                  x1="25%" y1="22%" x2="48%" y2="48%"
-                  stroke="hsl(262, 83%, 64%)"
-                  strokeWidth="2"
-                  strokeDasharray="6 4"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  whileInView={{ pathLength: 1, opacity: 0.4 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5, duration: 0.8 }}
-                />
-                <motion.line
-                  x1="55%" y1="52%" x2="78%" y2="78%"
-                  stroke="hsl(262, 83%, 64%)"
-                  strokeWidth="2"
-                  strokeDasharray="6 4"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  whileInView={{ pathLength: 1, opacity: 0.4 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.8, duration: 0.8 }}
-                />
-              </svg>
-            </div>
-          </div>
+          <AnimatedBuilderDemo />
         </motion.div>
       </div>
     </section>
@@ -926,12 +780,142 @@ function Navbar() {
   );
 }
 
+/* ─────────────── Tech Stack ─────────────── */
+function TechStack() {
+  const techs = [
+    {
+      name: "Spring Boot",
+      desc: "Enterprise-grade Java backend",
+      gradient: "linear-gradient(135deg, hsl(120, 60%, 42%), hsl(120, 60%, 52%))",
+      letter: "S",
+    },
+    {
+      name: "Apache Kafka",
+      desc: "Event-driven messaging",
+      gradient: "linear-gradient(135deg, hsl(0, 0%, 20%), hsl(0, 0%, 40%))",
+      letter: "K",
+    },
+    {
+      name: "React Flow",
+      desc: "Visual workflow canvas",
+      gradient: "linear-gradient(135deg, hsl(200, 90%, 50%), hsl(200, 90%, 65%))",
+      letter: "R",
+    },
+    {
+      name: "Gemini AI",
+      desc: "AI-powered generation",
+      gradient: "linear-gradient(135deg, hsl(262, 83%, 58%), hsl(262, 83%, 72%))",
+      letter: "G",
+    },
+    {
+      name: "PostgreSQL",
+      desc: "Reliable data persistence",
+      gradient: "linear-gradient(135deg, hsl(210, 50%, 45%), hsl(210, 50%, 60%))",
+      letter: "P",
+    },
+  ];
+
+  const stats = [
+    { value: "<50ms", label: "Avg latency" },
+    { value: "DAG", label: "Execution model" },
+    { value: "∞", label: "Scalable nodes" },
+    { value: "24/7", label: "Real-time monitoring" },
+  ];
+
+  return (
+    <section className="py-20 px-6">
+      <div className="max-w-5xl mx-auto">
+        {/* Label */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center text-xs font-medium uppercase tracking-[0.2em] mb-10"
+          style={{ color: "var(--neurex-text-ghost)" }}
+        >
+          Powered by industry-leading technologies
+        </motion.p>
+
+        {/* Tech logos */}
+        <div className="flex items-center justify-center gap-8 flex-wrap mb-16">
+          {techs.map((tech, i) => (
+            <motion.div
+              key={tech.name}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.4 }}
+              className="flex items-center gap-3 group"
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+                style={{ background: tech.gradient }}
+              >
+                {tech.letter}
+              </div>
+              <div>
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--neurex-text-primary)" }}
+                >
+                  {tech.name}
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "var(--neurex-text-ghost)" }}
+                >
+                  {tech.desc}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Stats strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-xl overflow-hidden"
+          style={{
+            backgroundColor: "var(--neurex-border-default)",
+            border: "1px solid var(--neurex-border-default)",
+          }}
+        >
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex flex-col items-center py-6"
+              style={{ backgroundColor: "var(--neurex-bg-elevated)" }}
+            >
+              <span
+                className="text-2xl font-bold tracking-tight"
+                style={{ color: "var(--neurex-accent)" }}
+              >
+                {stat.value}
+              </span>
+              <span
+                className="text-xs mt-1"
+                style={{ color: "var(--neurex-text-ghost)" }}
+              >
+                {stat.label}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 /* ─────────────── Page ─────────────── */
 export default function LandingPage() {
   return (
     <div style={{ backgroundColor: "var(--neurex-bg-base)" }}>
       <Navbar />
       <Hero />
+      <TechStack />
       <BuilderPreview />
       <AIDemo />
       <ExecutionDemo />

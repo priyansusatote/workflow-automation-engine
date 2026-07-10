@@ -409,17 +409,17 @@ export default function WorkflowsPage() {
 
       {/* List */}
       {isLoading ? (
-        <div className="space-y-3 animate-pulse">
-          {Array.from({ length: 3 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-20 rounded-xl"
+              className="h-40 rounded-xl"
               style={{ backgroundColor: "var(--neurex-bg-elevated)" }}
             />
           ))}
         </div>
       ) : filtered && filtered.length > 0 ? (
-        <motion.div layout className="space-y-3">
+        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence>
             {filtered.map((wf) => (
               <WorkflowCard key={wf.id} workflow={wf} />

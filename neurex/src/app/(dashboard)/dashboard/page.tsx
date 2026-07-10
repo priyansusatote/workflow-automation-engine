@@ -313,10 +313,26 @@ export default function DashboardPage() {
                     </Link>
                   ))
                 ) : (
-                  <div className="px-5 py-8 text-center">
-                    <p className="text-sm" style={{ color: "var(--neurex-text-tertiary)" }}>
+                  <div className="flex flex-col items-center px-5 py-10 text-center">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                      style={{ backgroundColor: "var(--neurex-accent-subtle)" }}
+                    >
+                      <Workflow className="w-5 h-5" style={{ color: "var(--neurex-accent)" }} />
+                    </div>
+                    <p className="text-sm font-medium mb-1" style={{ color: "var(--neurex-text-primary)" }}>
                       No workflows yet
                     </p>
+                    <p className="text-xs mb-4" style={{ color: "var(--neurex-text-tertiary)" }}>
+                      Create your first workflow to get started
+                    </p>
+                    <Link
+                      href="/workflows"
+                      className="neurex-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Create Workflow
+                    </Link>
                   </div>
                 )}
               </div>
@@ -402,10 +418,26 @@ export default function DashboardPage() {
                     </Link>
                   ))
                 ) : (
-                  <div className="px-5 py-8 text-center">
-                    <p className="text-sm" style={{ color: "var(--neurex-text-tertiary)" }}>
+                  <div className="flex flex-col items-center px-5 py-10 text-center">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                      style={{ backgroundColor: "var(--neurex-bg-overlay)" }}
+                    >
+                      <Play className="w-5 h-5" style={{ color: "var(--neurex-text-ghost)" }} />
+                    </div>
+                    <p className="text-sm font-medium mb-1" style={{ color: "var(--neurex-text-primary)" }}>
                       No executions yet
                     </p>
+                    <p className="text-xs mb-4" style={{ color: "var(--neurex-text-tertiary)" }}>
+                      Run a workflow to see execution history here
+                    </p>
+                    <Link
+                      href="/workflows"
+                      className="neurex-btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5"
+                    >
+                      Go to Workflows
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </div>
                 )}
               </div>
