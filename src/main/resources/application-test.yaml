@@ -1,0 +1,6 @@
+ai:
+  openrouter:
+    api-key: dummy-key
+
+jwt:
+  secret: test-secret-key-for-integration-tests-only-not-for-production-use
