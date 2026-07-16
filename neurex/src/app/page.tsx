@@ -27,14 +27,42 @@ import { useRef } from "react";
 function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-6">
-      {/* Radial glow */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle, hsl(262, 83%, 64%, 0.08) 0%, transparent 70%)",
-        }}
-      />
+      {/* Animated gradient mesh — 3 orbiting blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute w-[600px] h-[600px] rounded-full animate-gradient-rotate"
+          style={{
+            top: "20%",
+            left: "30%",
+            background:
+              "radial-gradient(circle, hsl(262, 83%, 64%, 0.12) 0%, transparent 60%)",
+            filter: "blur(80px)",
+          }}
+        />
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full"
+          style={{
+            top: "40%",
+            right: "20%",
+            background:
+              "radial-gradient(circle, hsl(217, 91%, 60%, 0.08) 0%, transparent 60%)",
+            filter: "blur(80px)",
+            animation: "gradient-rotate 20s ease-in-out infinite reverse",
+          }}
+        />
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full"
+          style={{
+            bottom: "20%",
+            left: "50%",
+            background:
+              "radial-gradient(circle, hsl(280, 67%, 60%, 0.06) 0%, transparent 60%)",
+            filter: "blur(60px)",
+            animation: "gradient-rotate 25s ease-in-out infinite",
+          }}
+        />
+      </div>
+
       {/* Grid pattern overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -50,13 +78,14 @@ function Hero() {
       <div className="relative z-10 max-w-4xl mx-auto text-center">
         {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
           style={{
-            backgroundColor: "var(--neurex-accent-subtle)",
-            border: "1px solid hsl(262, 83%, 64%, 0.2)",
+            background: "rgba(139, 92, 246, 0.08)",
+            border: "1px solid rgba(139, 92, 246, 0.2)",
+            backdropFilter: "blur(12px)",
           }}
         >
           <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--neurex-accent)" }} />
@@ -69,14 +98,16 @@ function Hero() {
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
-          style={{ color: "var(--neurex-text-primary)" }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6"
+          style={{ color: "var(--neurex-text-primary)", letterSpacing: "-0.03em" }}
         >
           Build workflows.{" "}
           <span
+            className="animate-text-shimmer"
             style={{
-              background: "linear-gradient(135deg, var(--neurex-accent), hsl(262, 83%, 78%))",
+              background: "linear-gradient(90deg, hsl(262, 83%, 64%), hsl(262, 83%, 78%), hsl(217, 91%, 70%), hsl(262, 83%, 64%))",
+              backgroundSize: "200% auto",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -89,7 +120,7 @@ function Hero() {
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
           style={{ color: "var(--neurex-text-secondary)" }}
         >
@@ -101,7 +132,7 @@ function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link
@@ -127,9 +158,12 @@ function Hero() {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="flex items-center justify-center gap-6 mt-16 flex-wrap"
         >
-          {["Spring Boot", "Kafka", "React Flow", "AI-Powered", "Real-time"].map((tech) => (
-            <span
+          {["Spring Boot", "Kafka", "React Flow", "AI-Powered", "Real-time"].map((tech, i) => (
+            <motion.span
               key={tech}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.6 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
               className="text-xs font-mono px-3 py-1 rounded-full"
               style={{
                 color: "var(--neurex-text-ghost)",
@@ -137,7 +171,8 @@ function Hero() {
               }}
             >
               {tech}
-            </span>
+            </motion.span>
+
           ))}
         </motion.div>
       </div>

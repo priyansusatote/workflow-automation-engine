@@ -282,8 +282,18 @@ function WorkflowMenu({
 }
 
 /* ─────────── Workflow Card ─────────── */
-function WorkflowCard({ workflow }: { workflow: WorkflowResponse }) {
+const cardColors = [
+  { icon: "var(--neurex-accent)", bg: "var(--neurex-accent-subtle)" },
+  { icon: "var(--neurex-running)", bg: "var(--neurex-running-subtle)" },
+  { icon: "var(--neurex-success)", bg: "var(--neurex-success-subtle)" },
+  { icon: "var(--neurex-warning)", bg: "var(--neurex-warning-subtle)" },
+  { icon: "hsl(330, 80%, 60%)", bg: "hsl(330, 80%, 60%, 0.12)" },
+  { icon: "hsl(190, 80%, 50%)", bg: "hsl(190, 80%, 50%, 0.12)" },
+];
+
+function WorkflowCard({ workflow, index = 0 }: { workflow: WorkflowResponse; index?: number }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const color = cardColors[index % cardColors.length];
 
   return (
     <motion.div
@@ -291,27 +301,35 @@ function WorkflowCard({ workflow }: { workflow: WorkflowResponse }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="group relative rounded-xl p-5 transition-all duration-200"
+      transition={{ ease: [0.16, 1, 0.3, 1] }}
+      className="group relative rounded-xl p-5"
       style={{
-        backgroundColor: "var(--neurex-bg-elevated)",
-        border: "1px solid var(--neurex-border-default)",
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur))",
+        WebkitBackdropFilter: "blur(var(--glass-blur))",
+        border: "1px solid var(--glass-border)",
+        borderTop: "1px solid var(--glass-border-top)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
+        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "var(--neurex-border-hover)";
-        e.currentTarget.style.boxShadow = "var(--shadow-md)";
+        e.currentTarget.style.borderColor = "var(--glass-border-hover)";
+        e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.3), var(--neurex-glow-accent)";
+        e.currentTarget.style.transform = "translateY(-2px)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "var(--neurex-border-default)";
-        e.currentTarget.style.boxShadow = "none";
+        e.currentTarget.style.borderColor = "var(--glass-border)";
+        e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)";
+        e.currentTarget.style.transform = "translateY(0)";
       }}
     >
       <div className="flex items-start justify-between mb-3">
         <Link href={`/workflows/${workflow.id}`} className="flex items-center gap-3 min-w-0">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "var(--neurex-accent-subtle)" }}
+            style={{ backgroundColor: color.bg }}
           >
-            <Zap className="w-4 h-4" style={{ color: "var(--neurex-accent)" }} />
+            <Zap className="w-4 h-4" style={{ color: color.icon }} />
           </div>
           <div className="min-w-0">
             <p
@@ -421,8 +439,8 @@ export default function WorkflowsPage() {
       ) : filtered && filtered.length > 0 ? (
         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence>
-            {filtered.map((wf) => (
-              <WorkflowCard key={wf.id} workflow={wf} />
+            {filtered.map((wf, i) => (
+              <WorkflowCard key={wf.id} workflow={wf} index={i} />
             ))}
           </AnimatePresence>
         </motion.div>

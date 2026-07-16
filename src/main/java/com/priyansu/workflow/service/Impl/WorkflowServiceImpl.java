@@ -3,6 +3,7 @@ package com.priyansu.workflow.service.Impl;
 import com.priyansu.workflow.dto.WorkflowRequest;
 import com.priyansu.workflow.dto.WorkflowResponse;
 import com.priyansu.workflow.entity.Workflow;
+import com.priyansu.workflow.entity.enums.WorkflowStatus;
 import com.priyansu.workflow.exception.DuplicateResourceException;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
 import com.priyansu.workflow.mapper.WorkflowMapper;
@@ -88,5 +89,27 @@ public class WorkflowServiceImpl implements WorkflowService {
         UUID userId = SecurityUtils.getCurrentUser().userId();
 
         return workflowRepository.findByUserId(userId);
+    }
+
+    @Override
+    public WorkflowResponse activateWorkflow(UUID id) {
+        Workflow workflow = workflowRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
+
+        workflow.setStatus(WorkflowStatus.ACTIVE);
+        Workflow updated = workflowRepository.save(workflow);
+
+        return workflowMapper.toWorkflowResponse(updated);
+    }
+
+    @Override
+    public WorkflowResponse deactivateWorkflow(UUID id) {
+        Workflow workflow = workflowRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
+
+        workflow.setStatus(WorkflowStatus.INACTIVE);
+        Workflow updated = workflowRepository.save(workflow);
+
+        return workflowMapper.toWorkflowResponse(updated);
     }
 }

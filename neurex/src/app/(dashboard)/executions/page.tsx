@@ -89,16 +89,21 @@ export default function ExecutionsPage() {
         <div
           className="rounded-xl overflow-hidden"
           style={{
-            backgroundColor: "var(--neurex-bg-elevated)",
-            border: "1px solid var(--neurex-border-default)",
+            background: "var(--glass-bg)",
+            backdropFilter: "blur(var(--glass-blur))",
+            WebkitBackdropFilter: "blur(var(--glass-blur))",
+            border: "1px solid var(--glass-border)",
+            borderTop: "1px solid var(--glass-border-top)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
           }}
         >
           {/* Header row */}
           <div
-            className="grid grid-cols-12 gap-4 px-5 py-3 text-xs font-medium"
+            className="grid grid-cols-12 gap-4 px-5 py-3 text-xs font-medium uppercase tracking-wider"
             style={{
               color: "var(--neurex-text-ghost)",
-              borderBottom: "1px solid var(--neurex-border-default)",
+              borderBottom: "1px solid var(--glass-border)",
+              letterSpacing: "0.05em",
             }}
           >
             <div className="col-span-3">Execution ID</div>
@@ -112,14 +117,22 @@ export default function ExecutionsPage() {
           {filtered.filter((e) => e.executionId).map((exec, i) => {
             const sc = statusConfig[exec.status];
             const Icon = sc.icon;
+            const rowBg = exec.status === "RUNNING" ? "var(--neurex-row-running)"
+              : exec.status === "FAILED" ? "var(--neurex-row-failed)"
+              : exec.status === "SUCCESS" ? "var(--neurex-row-success)"
+              : "transparent";
+            const borderColor = sc.color;
             return (
               <Link
                 key={exec.executionId ?? `exec-${i}`}
                 href={`/executions/${exec.executionId}`}
-                className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center transition-colors"
-                style={{ borderBottom: "1px solid var(--neurex-border-default)" }}
+                className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center transition-all duration-200 relative"
+                style={{
+                  borderBottom: "1px solid var(--glass-border)",
+                  borderLeft: `3px solid ${borderColor}`,
+                }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--neurex-bg-overlay)";
+                  e.currentTarget.style.backgroundColor = rowBg;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
@@ -147,7 +160,7 @@ export default function ExecutionsPage() {
                 </div>
                 <div className="col-span-2">
                   <span
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${exec.status === "RUNNING" ? "animate-running-pulse" : ""}`}
                     style={{ backgroundColor: sc.bg, color: sc.color }}
                   >
                     {exec.status === "RUNNING" && (

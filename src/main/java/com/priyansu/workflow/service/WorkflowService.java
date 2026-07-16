@@ -22,4 +22,8 @@ public interface WorkflowService {
     void deleteWorkflow(UUID id);
 
     List<Workflow> getMyWorkflows();
+
+    WorkflowResponse activateWorkflow(UUID id);
+
+    WorkflowResponse deactivateWorkflow(UUID id);
 }

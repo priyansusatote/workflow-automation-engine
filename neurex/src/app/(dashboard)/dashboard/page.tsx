@@ -52,6 +52,25 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 /* ─────────── Stat Card ─────────── */
+function MiniSparkline({ accent, bars = 7 }: { accent: string; bars?: number }) {
+  // Generate deterministic bar heights for visual sparkline effect
+  const heights = [35, 55, 45, 65, 50, 70, 60].slice(0, bars);
+  return (
+    <div className="flex items-end gap-[3px] h-8 opacity-30">
+      {heights.map((h, i) => (
+        <motion.div
+          key={i}
+          initial={{ height: 0 }}
+          animate={{ height: `${h}%` }}
+          transition={{ duration: 0.4, delay: 0.5 + i * 0.05, ease: [0.16, 1, 0.3, 1] }}
+          className="w-[4px] rounded-full"
+          style={{ backgroundColor: accent }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -73,11 +92,20 @@ function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-      className="p-5 rounded-xl"
+      transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] }}
+      className="group p-5 rounded-xl cursor-default"
       style={{
-        backgroundColor: "var(--neurex-bg-elevated)",
-        border: "1px solid var(--neurex-border-default)",
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur))",
+        WebkitBackdropFilter: "blur(var(--glass-blur))",
+        border: "1px solid var(--glass-border)",
+        borderTop: "1px solid var(--glass-border-top)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
+        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
+      whileHover={{
+        y: -2,
+        transition: { duration: 0.2 },
       }}
     >
       <div className="flex items-start justify-between mb-3">
@@ -87,10 +115,11 @@ function StatCard({
         >
           <Icon className="w-4 h-4" style={{ color: accent }} />
         </div>
+        <MiniSparkline accent={accent} />
       </div>
       <p
-        className="text-2xl font-bold tracking-tight"
-        style={{ color: "var(--neurex-text-primary)" }}
+        className="text-2xl font-bold"
+        style={{ color: "var(--neurex-text-primary)", letterSpacing: "-0.02em" }}
       >
         {value}
       </p>
@@ -98,7 +127,7 @@ function StatCard({
         {label}
       </p>
       {subtitle && (
-        <p className="text-xs mt-0.5" style={{ color: accent }}>
+        <p className="text-xs mt-0.5 font-medium" style={{ color: accent }}>
           {subtitle}
         </p>
       )}
@@ -249,11 +278,15 @@ export default function DashboardPage() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="rounded-xl"
+              transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-xl overflow-hidden"
               style={{
-                backgroundColor: "var(--neurex-bg-elevated)",
-                border: "1px solid var(--neurex-border-default)",
+                background: "var(--glass-bg)",
+                backdropFilter: "blur(var(--glass-blur))",
+                WebkitBackdropFilter: "blur(var(--glass-blur))",
+                border: "1px solid var(--glass-border)",
+                borderTop: "1px solid var(--glass-border-top)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
               }}
             >
               <div
@@ -342,11 +375,15 @@ export default function DashboardPage() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.25 }}
-              className="rounded-xl"
+              transition={{ duration: 0.4, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-xl overflow-hidden"
               style={{
-                backgroundColor: "var(--neurex-bg-elevated)",
-                border: "1px solid var(--neurex-border-default)",
+                background: "var(--glass-bg)",
+                backdropFilter: "blur(var(--glass-blur))",
+                WebkitBackdropFilter: "blur(var(--glass-blur))",
+                border: "1px solid var(--glass-border)",
+                borderTop: "1px solid var(--glass-border-top)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
               }}
             >
               <div
