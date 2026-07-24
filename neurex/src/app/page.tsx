@@ -555,12 +555,12 @@ function FeaturesBento() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16"
         >
           <h2
-            className="text-3xl md:text-5xl font-bold tracking-tight mb-4"
-            style={{ color: "var(--neurex-text-primary)" }}
+            className="text-3xl md:text-5xl font-bold mb-4"
+            style={{ color: "var(--neurex-text-primary)", letterSpacing: "-0.03em" }}
           >
             Everything you need
           </h2>
@@ -579,21 +579,26 @@ function FeaturesBento() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.5 }}
-              className={`group p-6 rounded-2xl transition-all duration-300 ${feature.span}`}
+              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className={`group p-6 rounded-2xl ${feature.span}`}
               style={{
-                backgroundColor: "var(--neurex-bg-elevated)",
-                border: "1px solid var(--neurex-border-default)",
+                background: "var(--glass-bg)",
+                backdropFilter: "blur(var(--glass-blur))",
+                WebkitBackdropFilter: "blur(var(--glass-blur))",
+                border: "1px solid var(--glass-border)",
+                borderTop: "1px solid var(--glass-border-top)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
+                transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--neurex-border-hover)";
+                e.currentTarget.style.borderColor = "var(--glass-border-hover)";
                 e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "var(--shadow-lg)";
+                e.currentTarget.style.boxShadow = "0 12px 40px rgba(0, 0, 0, 0.3), var(--neurex-glow-accent)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--neurex-border-default)";
+                e.currentTarget.style.borderColor = "var(--glass-border)";
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)";
               }}
             >
               <div
@@ -628,11 +633,11 @@ function Pricing() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2
-            className="text-3xl md:text-5xl font-bold tracking-tight mb-4"
-            style={{ color: "var(--neurex-text-primary)" }}
+            className="text-3xl md:text-5xl font-bold mb-4"
+            style={{ color: "var(--neurex-text-primary)", letterSpacing: "-0.03em" }}
           >
             Free during beta
           </h2>
@@ -649,15 +654,28 @@ function Pricing() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="inline-block p-8 rounded-2xl"
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="inline-block p-8 rounded-2xl relative"
           style={{
-            backgroundColor: "var(--neurex-bg-elevated)",
-            border: "1px solid hsl(262, 83%, 64%, 0.2)",
-            boxShadow: "0 0 40px hsl(262, 83%, 64%, 0.06)",
+            background: "var(--glass-bg)",
+            backdropFilter: "blur(var(--glass-blur))",
+            WebkitBackdropFilter: "blur(var(--glass-blur))",
+            border: "1px solid rgba(139, 92, 246, 0.25)",
+            borderTop: "1px solid rgba(139, 92, 246, 0.4)",
+            boxShadow: "0 0 40px hsl(262, 83%, 64%, 0.08), 0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
           }}
         >
-          <div className="flex items-baseline justify-center gap-1 mb-2">
+          {/* Popular badge */}
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold"
+            style={{
+              background: "linear-gradient(135deg, var(--neurex-accent), hsl(262, 83%, 56%))",
+              color: "white",
+            }}
+          >
+            Beta Access
+          </div>
+          <div className="flex items-baseline justify-center gap-1 mb-2 mt-2">
             <span
               className="text-5xl font-bold"
               style={{ color: "var(--neurex-text-primary)" }}
@@ -671,7 +689,7 @@ function Pricing() {
           <p className="text-sm mb-6" style={{ color: "var(--neurex-text-tertiary)" }}>
             Everything included
           </p>
-          <div className="space-y-2 mb-8 text-left">
+          <div className="space-y-2.5 mb-8 text-left">
             {[
               "Unlimited workflows",
               "AI workflow generation",
@@ -695,6 +713,205 @@ function Pricing() {
             Get started free
             <ArrowRight className="w-4 h-4" />
           </Link>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Testimonials ─────────────── */
+function Testimonials() {
+  const testimonials = [
+    {
+      quote: "Neurex replaced our entire Airflow setup. The visual builder alone saved us weeks of YAML debugging.",
+      name: "Sarah Chen",
+      role: "Staff Engineer, DataPipe",
+      avatar: "SC",
+      accent: "hsl(262, 83%, 64%)",
+    },
+    {
+      quote: "The AI generation is wild — I described a content moderation pipeline in plain English and it just… built it.",
+      name: "Marcus Rivera",
+      role: "CTO, ModerateAI",
+      avatar: "MR",
+      accent: "hsl(217, 91%, 60%)",
+    },
+    {
+      quote: "Real-time execution monitoring with step-level visibility. Finally, a workflow tool built for developers.",
+      name: "Priya Sharma",
+      role: "DevOps Lead, ScaleGrid",
+      avatar: "PS",
+      accent: "hsl(152, 69%, 53%)",
+    },
+  ];
+
+  return (
+    <section className="py-32 px-6">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-16"
+        >
+          <p
+            className="text-xs font-medium uppercase tracking-[0.2em] mb-4"
+            style={{ color: "var(--neurex-accent)" }}
+          >
+            What engineers say
+          </p>
+          <h2
+            className="text-3xl md:text-5xl font-bold"
+            style={{ color: "var(--neurex-text-primary)", letterSpacing: "-0.03em" }}
+          >
+            Loved by builders
+          </h2>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="p-6 rounded-xl relative"
+              style={{
+                background: "var(--glass-bg)",
+                backdropFilter: "blur(var(--glass-blur))",
+                WebkitBackdropFilter: "blur(var(--glass-blur))",
+                border: "1px solid var(--glass-border)",
+                borderTop: "1px solid var(--glass-border-top)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
+              }}
+            >
+              {/* Quote mark */}
+              <div
+                className="text-4xl font-serif leading-none mb-4 opacity-30"
+                style={{ color: t.accent }}
+              >
+                &ldquo;
+              </div>
+              <p
+                className="text-sm leading-relaxed mb-6"
+                style={{ color: "var(--neurex-text-secondary)" }}
+              >
+                {t.quote}
+              </p>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                  style={{ background: t.accent }}
+                >
+                  {t.avatar}
+                </div>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "var(--neurex-text-primary)" }}>
+                    {t.name}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--neurex-text-ghost)" }}>
+                    {t.role}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────── Comparison ─────────────── */
+function Comparison() {
+  const rows = [
+    { feature: "Visual DAG Builder", neurex: true, airflow: false, temporal: false, nifi: true },
+    { feature: "AI Workflow Generation", neurex: true, airflow: false, temporal: false, nifi: false },
+    { feature: "Real-time Execution View", neurex: true, airflow: "partial", temporal: true, nifi: "partial" },
+    { feature: "No YAML/Config Files", neurex: true, airflow: false, temporal: false, nifi: true },
+    { feature: "One-Click Deploy", neurex: true, airflow: false, temporal: false, nifi: false },
+    { feature: "Free Tier", neurex: true, airflow: true, temporal: true, nifi: true },
+    { feature: "Built-in Webhooks", neurex: true, airflow: false, temporal: true, nifi: true },
+    { feature: "Modern UI/UX", neurex: true, airflow: false, temporal: false, nifi: false },
+  ];
+
+  const renderCheck = (val: boolean | string) => {
+    if (val === true) return <span style={{ color: "var(--neurex-success)" }}>✓</span>;
+    if (val === "partial") return <span style={{ color: "var(--neurex-warning)" }}>~</span>;
+    return <span style={{ color: "var(--neurex-text-ghost)" }}>✗</span>;
+  };
+
+  return (
+    <section className="py-32 px-6">
+      <div className="max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-16"
+        >
+          <p
+            className="text-xs font-medium uppercase tracking-[0.2em] mb-4"
+            style={{ color: "var(--neurex-accent)" }}
+          >
+            Why Neurex
+          </p>
+          <h2
+            className="text-3xl md:text-5xl font-bold"
+            style={{ color: "var(--neurex-text-primary)", letterSpacing: "-0.03em" }}
+          >
+            Built different
+          </h2>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "var(--glass-bg)",
+            backdropFilter: "blur(var(--glass-blur))",
+            WebkitBackdropFilter: "blur(var(--glass-blur))",
+            border: "1px solid var(--glass-border)",
+            borderTop: "1px solid var(--glass-border-top)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2), var(--glass-inner-glow)",
+          }}
+        >
+          {/* Header */}
+          <div
+            className="grid grid-cols-5 gap-4 px-6 py-4 text-xs font-medium uppercase tracking-wider"
+            style={{
+              color: "var(--neurex-text-ghost)",
+              borderBottom: "1px solid var(--glass-border)",
+            }}
+          >
+            <div className="col-span-1">Feature</div>
+            <div className="text-center font-semibold" style={{ color: "var(--neurex-accent)" }}>Neurex</div>
+            <div className="text-center">Airflow</div>
+            <div className="text-center">Temporal</div>
+            <div className="text-center">NiFi</div>
+          </div>
+          {/* Rows */}
+          {rows.map((row, i) => (
+            <div
+              key={row.feature}
+              className="grid grid-cols-5 gap-4 px-6 py-3.5 items-center text-sm"
+              style={{
+                borderBottom: i < rows.length - 1 ? "1px solid var(--glass-border)" : "none",
+              }}
+            >
+              <div style={{ color: "var(--neurex-text-secondary)" }}>{row.feature}</div>
+              <div className="text-center text-base">{renderCheck(row.neurex)}</div>
+              <div className="text-center text-base">{renderCheck(row.airflow)}</div>
+              <div className="text-center text-base">{renderCheck(row.temporal)}</div>
+              <div className="text-center text-base">{renderCheck(row.nifi)}</div>
+            </div>
+          ))}
         </motion.div>
       </div>
     </section>
@@ -911,11 +1128,13 @@ function TechStack() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-xl overflow-hidden"
           style={{
-            backgroundColor: "var(--neurex-border-default)",
-            border: "1px solid var(--neurex-border-default)",
+            background: "var(--glass-border)",
+            border: "1px solid var(--glass-border)",
+            borderTop: "1px solid var(--glass-border-top)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
           }}
         >
           {stats.map((stat) => (
@@ -925,8 +1144,8 @@ function TechStack() {
               style={{ backgroundColor: "var(--neurex-bg-elevated)" }}
             >
               <span
-                className="text-2xl font-bold tracking-tight"
-                style={{ color: "var(--neurex-accent)" }}
+                className="text-2xl font-bold"
+                style={{ color: "var(--neurex-accent)", letterSpacing: "-0.02em" }}
               >
                 {stat.value}
               </span>
@@ -956,6 +1175,8 @@ export default function LandingPage() {
       <ExecutionDemo />
       <FeaturesBento />
       <Pricing />
+      <Testimonials />
+      <Comparison />
       <CTA />
       <Footer />
     </div>

@@ -21,4 +21,6 @@ public class WorkflowWebhook {
     @Column(unique = true)
     private String webhookKey;
 
+   // private String description; //added and removed for Learning Flyway (v2, v3 migrations)
+
 }

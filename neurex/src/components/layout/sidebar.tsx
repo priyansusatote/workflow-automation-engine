@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NeurexLogo } from "@/components/ui/neurex-logo";
@@ -96,7 +97,7 @@ function NavItem({ href, icon: Icon, label, badge, isCollapsed }: NavItemProps) 
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         />
       )}
-      {/* Tooltip for collapsed */}
+      {/* Tooltip for collapsed — only show when truly collapsed (not hover-expanded) */}
       {isCollapsed && (
         <div
           className="absolute left-full ml-3 px-2.5 py-1.5 rounded-md text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50"
@@ -121,29 +122,56 @@ export function Sidebar() {
   const aiEnabled = useFeatureFlag("AI_GENERATION");
   const logout = useLogout();
 
+  // Expand-on-hover: when collapsed, hovering temporarily expands
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (isCollapsed) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoverExpanded(true);
+      }, 200); // slight delay to prevent flicker
+    }
+  }, [isCollapsed]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoverExpanded(false);
+  }, []);
+
+  // Effective state: show expanded if toggled open OR hover-expanded
+  const showExpanded = !isCollapsed || hoverExpanded;
+  const effectiveCollapsed = !showExpanded;
+
   return (
     <motion.aside
       className="fixed left-0 top-0 bottom-0 z-40 flex flex-col"
       animate={{
-        width: isCollapsed ? 64 : 240,
+        width: showExpanded ? 240 : 64,
       }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      transition={{ type: "spring", stiffness: 350, damping: 30 }}
       style={{
         backgroundColor: "var(--neurex-bg-elevated)",
         borderRight: "1px solid var(--neurex-border-default)",
+        boxShadow: hoverExpanded ? "4px 0 24px rgba(0, 0, 0, 0.3)" : "none",
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Logo */}
       <div
         className={cn(
           "flex items-center h-14 shrink-0",
-          isCollapsed ? "justify-center px-3" : "px-4 gap-3"
+          effectiveCollapsed ? "justify-center px-3" : "px-4 gap-3"
         )}
         style={{ borderBottom: "1px solid var(--neurex-border-default)" }}
       >
           <NeurexLogo size={28} />
         <AnimatePresence>
-          {!isCollapsed && (
+          {!effectiveCollapsed && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -163,33 +191,33 @@ export function Sidebar() {
           href="/dashboard"
           icon={LayoutDashboard}
           label="Dashboard"
-          isCollapsed={isCollapsed}
+          isCollapsed={effectiveCollapsed}
         />
         <NavItem
           href="/workflows"
           icon={GitBranch}
           label="Workflows"
-          isCollapsed={isCollapsed}
+          isCollapsed={effectiveCollapsed}
         />
         <NavItem
           href="/executions"
           icon={Play}
           label="Executions"
-          isCollapsed={isCollapsed}
+          isCollapsed={effectiveCollapsed}
         />
         {aiEnabled && (
           <NavItem
             href="/ai/generate"
             icon={Sparkles}
             label="AI Generate"
-            isCollapsed={isCollapsed}
+            isCollapsed={effectiveCollapsed}
           />
         )}
         <NavItem
           href="/settings"
           icon={Settings}
           label="Settings"
-          isCollapsed={isCollapsed}
+          isCollapsed={effectiveCollapsed}
         />
         {isAdmin && (
           <>
@@ -203,7 +231,7 @@ export function Sidebar() {
               href="/admin"
               icon={Shield}
               label="Admin"
-              isCollapsed={isCollapsed}
+              isCollapsed={effectiveCollapsed}
             />
           </>
         )}
@@ -215,7 +243,7 @@ export function Sidebar() {
         style={{ borderTop: "1px solid var(--neurex-border-default)" }}
       >
         {/* User info */}
-        {user && !isCollapsed && (
+        {user && !effectiveCollapsed && (
           <div className="px-3 py-2">
             <p
               className="text-sm font-medium truncate"
@@ -237,7 +265,7 @@ export function Sidebar() {
           onClick={toggle}
           className={cn(
             "flex items-center gap-3 rounded-lg transition-all duration-200 w-full",
-            isCollapsed ? "justify-center px-3 py-2.5" : "px-3 py-2.5"
+            effectiveCollapsed ? "justify-center px-3 py-2.5" : "px-3 py-2.5"
           )}
           style={{ color: "var(--neurex-text-tertiary)" }}
           onMouseEnter={(e) => {
@@ -256,7 +284,7 @@ export function Sidebar() {
             <ChevronLeft className="w-[18px] h-[18px]" />
           </motion.div>
           <AnimatePresence>
-            {!isCollapsed && (
+            {!effectiveCollapsed && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -274,7 +302,7 @@ export function Sidebar() {
           onClick={() => logout.mutate()}
           className={cn(
             "flex items-center gap-3 rounded-lg transition-all duration-200 w-full",
-            isCollapsed ? "justify-center px-3 py-2.5" : "px-3 py-2.5"
+            effectiveCollapsed ? "justify-center px-3 py-2.5" : "px-3 py-2.5"
           )}
           style={{ color: "var(--neurex-text-tertiary)" }}
           onMouseEnter={(e) => {
@@ -288,7 +316,7 @@ export function Sidebar() {
         >
           <LogOut className="w-[18px] h-[18px]" />
           <AnimatePresence>
-            {!isCollapsed && (
+            {!effectiveCollapsed && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

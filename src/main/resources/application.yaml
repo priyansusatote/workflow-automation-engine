@@ -10,6 +10,14 @@ spring:
     username: postgres
     password: postgres
 
+  flyway:
+    enabled: true
+
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 
   kafka:
@@ -36,7 +44,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
 
 logging:
@@ -58,10 +66,7 @@ ai:
     url: https://openrouter.ai/api/v1/chat/completions
     timeout-seconds: 30
 
-  data:
-    redis:
-      host: localhost
-      port: 6379
+
 
 
 resilience4j:
