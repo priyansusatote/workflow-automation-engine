@@ -1,6 +1,9 @@
 ai:
   openrouter:
-    api-key: dummy-key
+    api-key: test-api-key
+    model: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+    url: https://openrouter.ai/api/v1/chat/completions
+    timeout-seconds: 30
 
 jwt:
   secret: test-secret-key-for-integration-tests-only-not-for-production-use
