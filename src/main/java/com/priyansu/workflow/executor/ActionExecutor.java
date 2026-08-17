@@ -27,7 +27,13 @@ public class ActionExecutor implements TaskExecutor {
         if (config == null || config.isNull()) {
             throw new WorkflowValidationException("ACTION node missing config");
         }
-        String actionType = config.get("actionType").asText();
+
+        JsonNode actionTypeNode = config.get("actionType");
+        if (actionTypeNode == null || actionTypeNode.isNull() || actionTypeNode.asText().isBlank()) {
+            throw new WorkflowValidationException("ACTION node missing actionType");
+        }
+
+        String actionType = actionTypeNode.asText();
 
         context.put(
                 node.get("id").asText() + "_result",

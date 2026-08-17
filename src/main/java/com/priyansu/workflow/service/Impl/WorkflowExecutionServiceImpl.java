@@ -10,6 +10,7 @@ import com.priyansu.workflow.entity.Workflow;
 import com.priyansu.workflow.entity.WorkflowDefinition;
 import com.priyansu.workflow.entity.WorkflowExecution;
 import com.priyansu.workflow.entity.enums.ExecutionStatus;
+import com.priyansu.workflow.entity.enums.WorkflowStatus;
 import com.priyansu.workflow.event.WorkflowExecutionEvent;
 import com.priyansu.workflow.event.WorkflowExecutionProducer;
 import com.priyansu.workflow.exception.ResourceNotFoundException;
@@ -124,10 +125,23 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 .findById(executionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
 
-        // 🔥 IDEMPOTENCY CHECK {Same message can come twice}{Idempotency ensures that repeated requests or events do not cause duplicate side effects.} [Ensures a Thing(operation) to happens Once , Should only happen once even if repeated"
-        if (execution.getStatus() == ExecutionStatus.SUCCESS) {
+        // Ignore completed or already-paused executions. An atomic claim below
+        // prevents duplicate Kafka deliveries from running concurrently.
+        if (execution.getStatus() == ExecutionStatus.SUCCESS
+                || execution.getStatus() == ExecutionStatus.WAITING) {
             return;
         }
+
+        if (executionRepository.claimForProcessing(
+                executionId,
+                List.of(ExecutionStatus.RUNNING, ExecutionStatus.FAILED)
+        ) == 0) {
+            return;
+        }
+
+        execution = executionRepository
+                .findById(executionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
 
         try {
             log.info("Starting workflow execution → executionId={}", executionId);
@@ -183,6 +197,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             throw e;
 
         } finally {
+            execution.setProcessing(false);
             executionRepository.save(execution);
         }
     }
@@ -221,6 +236,11 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
             // WAIT nodes pause workflow execution
             if ("WAIT".equals(type)) {
+                task.setStatus(ExecutionStatus.WAITING);
+                task.setLogMessage("Waiting for workflow resume");
+                task.setOutputData(context.getData());
+                taskExecutionRepository.save(task);
+
                 pauseExecution(
                         executionId,
                         currentNode,
@@ -328,6 +348,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         //Check Ownership
         authorizationService.validateWorkflowOwnership(workflowId);
 
+        Workflow workflow = workflowRepository.findById(workflowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
+
+        if (workflow.getStatus() != WorkflowStatus.ACTIVE) {
+            throw new WorkflowValidationException("Workflow is not active");
+        }
+
         WorkflowExecution execution = createExecution(workflowId);
 
         WorkflowExecutionEvent event = new WorkflowExecutionEvent(
@@ -347,8 +374,34 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         //check Ownership
         authorizationService.validateExecutionOwnership(executionId);
 
+        resumeExecutionInternal(executionId);
+    }
+
+    @Override
+    public void resumeWaitingExecution(UUID executionId) {
+        resumeExecutionInternal(executionId);
+    }
+
+    private void resumeExecutionInternal(UUID executionId) {
+
         //  STEP 1: FETCH EXECUTION RECORD [Get existing workflow execution (must exist to resume)
         WorkflowExecution execution = executionRepository
+                .findById(executionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
+
+        if (execution.getStatus() == ExecutionStatus.SUCCESS
+                || execution.getStatus() == ExecutionStatus.RUNNING) {
+            return;
+        }
+
+        if (executionRepository.claimForProcessing(
+                executionId,
+                List.of(ExecutionStatus.WAITING, ExecutionStatus.FAILED)
+        ) == 0) {
+            return;
+        }
+
+        execution = executionRepository
                 .findById(executionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Execution not found"));
 
@@ -459,6 +512,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         } finally {
 
             // STEP 12: PERSIST FINAL STATE  [Ensures DB always reflects latest execution status
+            execution.setProcessing(false);
             executionRepository.save(execution);
         }
     }
@@ -525,18 +579,34 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     //helper
     private long parseSeconds(String duration) {
-
-        if (duration.endsWith("s")) {
-
-            return Long.parseLong(
-                    duration.replace("s", "")
-            );
+        if (duration == null || duration.isBlank()) {
+            throw new WorkflowValidationException("WAIT duration must not be blank");
         }
 
-        throw new WorkflowValidationException(
-                "Unsupported WAIT duration: "
-                        + duration
-        );
+        String normalized = duration.trim().toLowerCase(Locale.ROOT);
+        char unit = normalized.charAt(normalized.length() - 1);
+        String amountText = normalized.substring(0, normalized.length() - 1);
+
+        try {
+            long amount = Long.parseLong(amountText);
+            if (amount <= 0) {
+                throw new WorkflowValidationException(
+                        "WAIT duration must be greater than zero: " + duration
+                );
+            }
+
+            return switch (unit) {
+                case 's' -> amount;
+                case 'm' -> Math.multiplyExact(amount, 60L);
+                default -> throw new WorkflowValidationException(
+                        "Unsupported WAIT duration: " + duration
+                );
+            };
+        } catch (NumberFormatException | ArithmeticException ex) {
+            throw new WorkflowValidationException(
+                    "Invalid WAIT duration: " + duration
+            );
+        }
     }
 
 

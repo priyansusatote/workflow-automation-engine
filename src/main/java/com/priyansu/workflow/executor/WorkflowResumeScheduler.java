@@ -37,9 +37,15 @@ public class WorkflowResumeScheduler {
                     execution.getId()
             );
 
-            workflowExecutionService.resumeExecution(
-                    execution.getId()
-            );
+            try {
+                workflowExecutionService.resumeWaitingExecution(execution.getId());
+            } catch (Exception ex) {
+                log.error(
+                        "Failed to resume execution={} without stopping the scheduler pass",
+                        execution.getId(),
+                        ex
+                );
+            }
         }
     }
 

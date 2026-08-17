@@ -42,8 +42,17 @@ public class HttpActionTaskExecutor implements TaskExecutor {
         }
 
         //2: Read Method + URL
-        String method = config.get("method").asText();
-        String url = config.get("url").asText();
+        JsonNode methodNode = config.get("method");
+        JsonNode urlNode = config.get("url");
+        if (methodNode == null || methodNode.isNull() || methodNode.asText().isBlank()) {
+            throw new WorkflowValidationException("HTTP_ACTION missing method");
+        }
+        if (urlNode == null || urlNode.isNull() || urlNode.asText().isBlank()) {
+            throw new WorkflowValidationException("HTTP_ACTION missing url");
+        }
+
+        String method = methodNode.asText();
+        String url = urlNode.asText();
 
         //3: Body
         JsonNode bodyNode = config.get("body");

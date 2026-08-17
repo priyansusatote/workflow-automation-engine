@@ -5,7 +5,11 @@ import com.priyansu.workflow.entity.enums.ExecutionStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,6 +17,20 @@ import java.util.UUID;
 
 @Repository
 public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecution, UUID> {
+
+    @Modifying
+    @Transactional
+    @Query("""
+            update WorkflowExecution execution
+               set execution.processing = true
+             where execution.id = :executionId
+               and execution.processing = false
+               and execution.status in :claimableStatuses
+            """)
+    int claimForProcessing(
+            @Param("executionId") UUID executionId,
+            @Param("claimableStatuses") List<ExecutionStatus> claimableStatuses
+    );
 
     // Finds all workflow executions that are in WAITING status and whose resume time has already passed.
     List<WorkflowExecution> findByStatusAndResumeAtBefore(ExecutionStatus status, LocalDateTime now);

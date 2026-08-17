@@ -27,6 +27,9 @@ public class WorkflowExecution extends BaseEntity{   //EXECUTION TRACKING && log
     @Enumerated(EnumType.STRING)
     private ExecutionStatus status;
 
+    @Column(nullable = false)
+    private boolean processing;
+
     private String errorMessage;
 
     private LocalDateTime resumeAt;

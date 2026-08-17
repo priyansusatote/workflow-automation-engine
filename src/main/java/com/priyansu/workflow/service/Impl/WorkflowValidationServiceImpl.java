@@ -1,6 +1,7 @@
 package com.priyansu.workflow.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.priyansu.workflow.exception.WorkflowValidationException;
 import com.priyansu.workflow.service.WorkflowValidationService;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +28,11 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
 
         if (nodes == null || !nodes.isArray()) {
             errors.add("workflow missing nodes array");
+            nodes = JsonNodeFactory.instance.arrayNode();
         }
         if (edges == null || !edges.isArray()) {
             errors.add("workflow missing edges array");
+            edges = JsonNodeFactory.instance.arrayNode();
         }
 
         //2: Unique Nodes Ids
@@ -151,7 +154,10 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
                 String from = edge.get("from").asText();
                 String to = edge.get("to").asText();
 
-                if (from.equals(current) && !visited.contains(to)) {
+                if (nodeIds.contains(from)
+                        && nodeIds.contains(to)
+                        && from.equals(current)
+                        && !visited.contains(to)) {
                     visited.add(to);
                     queue.add(to);
                 }
@@ -290,7 +296,9 @@ public class WorkflowValidationServiceImpl implements WorkflowValidationService 
             String from = edge.get("from").asText();
             String to = edge.get("to").asText();
 
-            graph.get(from).add(to);
+            if (nodeIds.contains(from) && nodeIds.contains(to)) {
+                graph.get(from).add(to);
+            }
         }
 
         //S2 : DFS Sets

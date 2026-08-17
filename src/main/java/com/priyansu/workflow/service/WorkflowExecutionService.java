@@ -23,6 +23,8 @@ public interface WorkflowExecutionService {
 
     void resumeExecution(UUID id);
 
+    void resumeWaitingExecution(UUID id);
+
     //GET Execution Details
     WorkflowExecutionResponse getExecution(UUID executionId);
 
